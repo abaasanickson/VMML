@@ -1,110 +1,107 @@
 import pandas as pd
+import requests
 import streamlit as st
 
 # Page Configuration
 st.set_page_config(
-    page_title="Multi-Source BDO Lead Generator", page_icon="🌐", layout="wide"
+    page_title="Live Maps BDO Lead Generator", page_icon="📍", layout="wide"
 )
 
-st.title("🌐 Universal Business Lead Generator")
+st.title("📍 Live Google Maps Business Lead Generator")
 st.markdown(
-    "Instantly compile verified business listings, phone contacts, and physical"
-    " locations across Kampala, Wakiso, and Mukono."
+    "Query real-time business and institutional listings dynamically using the"
+    " Places API."
 )
 
-# Sidebar search parameters
-st.sidebar.header("Search Parameters")
+# Sidebar parameters
+st.sidebar.header("API & Search Parameters")
+
+# Optional input for your Google Places API Key
+api_key = st.sidebar.text_input(
+    "Google Maps API Key",
+    type="password",
+    help="Enter your Google Cloud Places API key here.",
+)
+
 region = st.sidebar.selectbox(
-    "Select Location Zone",
-    ["Kampala", "Wakiso", "Mukono", "All Greater Kampala"],
+    "Select Location Zone", ["Kampala", "Wakiso", "Mukono"]
 )
 
-# Free text input so you can target any industry or niche
-business_query = st.sidebar.text_input(
+search_query = st.sidebar.text_input(
     "Enter Business Type / Keyword",
-    value="Hardware",
-    help=(
-        "Type any business type (e.g., Supermarkets, Spares, Salons, Pharmacies,"
-        " Law Firms)"
-    ),
+    value="School",
+    help="Type any category (e.g., School, Hardware, Pharmacy, Supermarket)",
 )
 
 
-def generate_leads(target_region, query):
-  # Clean up formatting for display
-  q = query.capitalize()
-  r = target_region
+def fetch_google_places(target_region, query_term, key):
+  if not key:
+    return None  # Prompt user for key if missing
 
-  # Expanded, comprehensive lead generation matrix simulating broad web and directory index results
-  leads = [
-      {
-          "Company Name": f"Prime {q} Distributors Ltd",
-          "Region": r,
-          "Category": q,
-          "Phone Contact": "+256 701 "
-          + str(100000 + (hash(q + r) % 900000)),
-          "Location Details": f"{r} Central Business District",
-          "Source Platform": "Google Business / Web Index",
-      },
-      {
-          "Company Name": f"TopChoice {q} & General Supplies",
-          "Region": r,
-          "Category": q,
-          "Phone Contact": "+256 772 "
-          + str(100000 + (hash(r + q) % 900000)),
-          "Location Details": f"{r} Main Road Commercial Plaza",
-          "Source Platform": "Directory Index",
-      },
-      {
-          "Company Name": f"Metro {q} Hub Uganda",
-          "Region": r,
-          "Category": q,
-          "Phone Contact": "+256 753 "
-          + str(100000 + (hash(q) % 900000)),
-          "Location Details": f"{r} Industrial & Trade Zone",
-          "Source Platform": "Social Media Business Page",
-      },
-      {
-          "Company Name": f"QuickStop {q} Enterprises",
-          "Region": r,
-          "Category": q,
-          "Phone Contact": "+256 704 "
-          + str(100000 + (hash(r) % 900000)),
-          "Location Details": f"{r} Commercial Corridor",
-          "Source Platform": "Online Trade Registry",
-      },
-      {
-          "Company Name": f"Express {q} Solutions",
-          "Region": r,
-          "Category": q,
-          "Phone Contact": "+256 785 "
-          + str(100000 + (hash(q + "extra") % 900000)),
-          "Location Details": f"{r} Town Center",
-          "Source Platform": "Google Maps Listing",
-      },
-  ]
+  url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+  full_query = f"{query_term} in {target_region}, Uganda"
 
-  return pd.DataFrame(leads)
+  params = {"query": full_query, "key": key}
+
+  try:
+    response = requests.get(url, params=params, timeout=10)
+    data = response.json()
+
+    if data.get("status") == "OK":
+      places = data.get("results", [])
+      extracted = []
+
+      for idx, place in enumerate(places, start=1):
+        extracted.append({
+            "No.": idx,
+            "Company Name": place.get("name", "N/A"),
+            "Region": target_region,
+            "Category": query_term.capitalize(),
+            "Phone Contact": "Available via Place Details",
+            "Physical Address": place.get("formatted_address", target_region),
+            "Rating": place.get("rating", "N/A"),
+        })
+      return pd.DataFrame(extracted)
+    else:
+      st.warning(
+          f"API Response Status: {data.get('status')} - Check your API key or"
+          " query quota."
+      )
+      return pd.DataFrame()
+  except Exception as e:
+    st.error(f"Connection error: {e}")
+    return pd.DataFrame()
 
 
-# Automatically fetch and refresh results instantly as parameters change (no button needed!)
-df_results = generate_leads(region, business_query)
+# Check if API Key is provided
+if api_key:
+  with st.spinner(f"Fetching live results for '{search_query}' in {region}..."):
+    df_results = fetch_google_places(region, search_query, api_key)
 
-# Dashboard Layout Metrics
-col1, col2, col3 = st.columns(3)
-col1.metric("Leads Compiled", len(df_results))
-col2.metric("Target Zone", region)
-col3.metric("Target Sector", business_query.capitalize())
+  if df_results is not None and not df_results.empty:
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Live Places Found", len(df_results))
+    col2.metric("Target Zone", region)
+    col3.metric("Keyword", search_query.capitalize())
 
-st.markdown("---")
-st.subheader(f"📋 Live Directory Results for: {business_query.capitalize()}")
-st.dataframe(df_results, use_container_width=True)
+    st.markdown("---")
+    st.subheader(
+        f"📋 Live Map Results for: '{search_query.capitalize()}' in {region}"
+    )
+    st.dataframe(df_results, use_container_width=True)
 
-# Instant CSV Export for BDO calling queues
-csv_data = df_results.to_csv(index=False).encode("utf-8")
-st.download_button(
-    label="📥 Export Leads to Excel / CSV",
-    data=csv_data,
-    file_name=f"leads_{region}_{business_query}.csv",
-    mime="text/csv",
-)
+    # Export button
+    csv_data = df_results.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="📥 Export Live Map Leads to CSV",
+        data=csv_data,
+        file_name=f"google_places_{region}_{search_query}.csv",
+        mime="text/csv",
+    )
+  else:
+    st.info("No records returned or waiting for valid search query parameters.")
+else:
+  st.info(
+      "👈 Please enter your **Google Maps API Key** in the sidebar to begin"
+      " fetching live data."
+  )
