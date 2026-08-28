@@ -5,81 +5,182 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-st.set_page_config(page_title="Full Region Lead Generator", page_icon="📍", layout="wide")
+# ====================== PAGE CONFIG ======================
+st.set_page_config(
+    page_title="Full Region Lead Generator",
+    page_icon="📍",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Simple modern style
+# ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0;}
-section[data-testid="stSidebar"] {background: #1e293b; border-right: 1px solid #334155;}
-h1, h2, h3 {color: #f8fafc !important;}
-div[data-testid="stMetric"] {background: rgba(30,41,59,0.7); border: 1px solid #334155; border-radius: 12px; padding: 16px;}
-.stButton > button {background: linear-gradient(90deg, #3b82f6, #06b6d4); color: white; border-radius: 10px; font-weight: 600;}
-.stDownloadButton > button {background: linear-gradient(90deg, #10b981, #059669); color: white; border-radius: 10px;}
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #e2e8f0;
+    }
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-right: 1px solid #334155;
+    }
+    h1, h2, h3 {
+        color: #f8fafc !important;
+    }
+    div[data-testid="stMetric"] {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 16px;
+    }
+    div[data-testid="stMetric"] label {
+        color: #94a3b8 !important;
+    }
+    div[data-testid="stMetric"] div {
+        color: #38bdf8 !important;
+        font-weight: 600;
+    }
+    .stButton > button {
+        background: linear-gradient(90deg, #3b82f6, #06b6d4);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.4rem;
+        font-weight: 600;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    .stDownloadButton > button {
+        background: linear-gradient(90deg, #10b981, #059669);
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+    .welcome-card {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 24px 28px;
+        margin-bottom: 24px;
+    }
+    .welcome-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #38bdf8;
+        margin-bottom: 6px;
+    }
+    .welcome-subtitle {
+        color: #94a3b8;
+        font-size: 1rem;
+        margin-bottom: 14px;
+    }
+    .quote {
+        font-style: italic;
+        color: #cbd5e1;
+        border-left: 4px solid #3b82f6;
+        padding-left: 16px;
+        margin-top: 12px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# API Key from secrets
+# ====================== LOAD API KEY FROM SECRETS ======================
 try:
     api_key = st.secrets["GOOGLE_MAPS_API_KEY"]
 except:
-    st.error("API key not configured. Contact the administrator.")
+    st.error("API key not configured. Please contact the administrator.")
     st.stop()
 
-# Welcome + Quote
+# ====================== QUOTES & WELCOME ======================
 QUOTES = [
     "Success is the sum of small efforts repeated day in and day out.",
     "The only way to do great work is to love what you do.",
     "Don't watch the clock; do what it does. Keep going.",
     "Opportunities don't happen. You create them.",
+    "The harder you work for something, the greater you'll feel when you achieve it.",
     "Dream big. Start small. Act now.",
     "Consistency is what transforms average into excellence.",
     "Your future is created by what you do today, not tomorrow.",
-    "Push yourself, because no one else is going to do it for you."
+    "Push yourself, because no one else is going to do it for you.",
+    "Great things never come from comfort zones."
 ]
 
-hour = datetime.now().hour
-if 5 <= hour < 12:
-    greeting = "Good morning"
-elif 12 <= hour < 17:
-    greeting = "Good afternoon"
-else:
-    greeting = "Good evening"
+def get_greeting():
+    hour = datetime.now().hour
+    if 5 <= hour < 12:
+        return "Good morning"
+    elif 12 <= hour < 17:
+        return "Good afternoon"
+    elif 17 <= hour < 22:
+        return "Good evening"
+    else:
+        return "Hello"
 
-st.markdown(f"### {greeting} 👋 Ready to generate leads?")
-st.caption(f"“{random.choice(QUOTES)}”")
+quote = random.choice(QUOTES)
+greeting = get_greeting()
+
+st.markdown(f"""
+<div class="welcome-card">
+    <div class="welcome-title">{greeting} 👋 Ready to generate leads?</div>
+    <div class="welcome-subtitle">Full coverage across Kampala, Wakiso & Mukono</div>
+    <div class="quote">“{quote}”</div>
+</div>
+""", unsafe_allow_html=True)
+
 st.title("📍 Full Region Business Lead Generator")
+st.caption("Grid-based Nearby Search • Complete regional coverage • Deduplicated results")
 
-# Sidebar
-st.sidebar.header("Search Settings")
-region = st.sidebar.selectbox("Select Region", ["Kampala", "Wakiso", "Mukono"])
-search_query = st.sidebar.text_input("Business Type / Keyword", value="Hardware")
-radius = st.sidebar.slider("Search Radius (meters)", 2000, 8000, 5000, 500)
+# ====================== SIDEBAR ======================
+st.sidebar.markdown("### ⚙️ Search Settings")
 
-# Grids
+region = st.sidebar.selectbox(
+    "Select Region",
+    ["Kampala", "Wakiso", "Mukono"]
+)
+
+search_query = st.sidebar.text_input(
+    "Business Type / Keyword",
+    value="Hardware",
+    help="e.g. School, Hardware, Pharmacy, Supermarket, Clinic"
+)
+
+radius = st.sidebar.slider(
+    "Search Radius per point (meters)",
+    min_value=2000,
+    max_value=8000,
+    value=5000,
+    step=500
+)
+
+st.sidebar.markdown("---")
+st.sidebar.info("Larger radius = better coverage but more duplicates (auto-removed)")
+
+# ====================== REGION GRIDS ======================
 REGION_GRIDS = {
     "Kampala": [
         (-0.3476, 32.5825), (-0.3120, 32.5800), (-0.2800, 32.5600),
         (-0.3300, 32.6200), (-0.3000, 32.6500), (-0.3600, 32.6200),
         (-0.3200, 32.5400), (-0.2900, 32.5200), (-0.3500, 32.5400),
         (-0.3800, 32.5800), (-0.4000, 32.5500), (-0.3700, 32.6100),
-        (-0.3400, 32.5600), (-0.3100, 32.6000), (-0.3600, 32.5900)
+        (-0.3400, 32.5600), (-0.3100, 32.6000), (-0.3600, 32.5900),
     ],
     "Wakiso": [
         (0.0640, 32.4600), (0.1000, 32.5000), (0.0400, 32.5200),
         (0.0000, 32.4800), (0.0800, 32.4200), (0.1200, 32.4800),
         (0.0500, 32.4000), (0.0200, 32.5500), (-0.0200, 32.5200),
-        (0.0900, 32.5500), (0.0300, 32.4500), (0.0700, 32.3800)
+        (0.0900, 32.5500), (0.0300, 32.4500), (0.0700, 32.3800),
     ],
     "Mukono": [
         (0.3530, 32.7550), (0.3200, 32.7200), (0.3800, 32.7800),
         (0.3000, 32.7800), (0.4000, 32.7300), (0.3500, 32.7000),
         (0.2800, 32.7400), (0.3700, 32.8200), (0.3300, 32.8000),
-        (0.4100, 32.7600)
+        (0.4100, 32.7600),
     ]
 }
 
-# Session state
+# ====================== SESSION STATE ======================
 if "stored_places" not in st.session_state:
     st.session_state.stored_places = []
 if "used_points" not in st.session_state:
@@ -89,57 +190,70 @@ if "last_params" not in st.session_state:
 if "point_index" not in st.session_state:
     st.session_state.point_index = 0
 
+# ====================== HELPER FUNCTIONS ======================
 def fetch_place_details(place_id, key):
+    url = "https://maps.googleapis.com/maps/api/place/details/json"
+    params = {
+        "place_id": place_id,
+        "fields": "formatted_phone_number,international_phone_number,website",
+        "key": key
+    }
     try:
-        r = requests.get(
-            "https://maps.googleapis.com/maps/api/place/details/json",
-            params={"place_id": place_id, "fields": "formatted_phone_number,international_phone_number,website", "key": key},
-            timeout=8
-        )
+        r = requests.get(url, params=params, timeout=8)
         data = r.json()
         if data.get("status") == "OK":
-            res = data.get("result", {})
-            phone = res.get("formatted_phone_number") or res.get("international_phone_number") or "N/A"
-            return phone, res.get("website", "N/A")
+            result = data.get("result", {})
+            phone = result.get("formatted_phone_number") or result.get("international_phone_number") or "N/A"
+            website = result.get("website") or "N/A"
+            return phone, website
     except:
         pass
     return "N/A", "N/A"
 
+
 def nearby_search(lat, lng, keyword, key, radius_m):
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    params = {
+        "location": f"{lat},{lng}",
+        "radius": radius_m,
+        "keyword": keyword,
+        "key": key
+    }
     try:
-        r = requests.get(
-            "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
-            params={"location": f"{lat},{lng}", "radius": radius_m, "keyword": keyword, "key": key},
-            timeout=12
-        )
+        r = requests.get(url, params=params, timeout=12)
         data = r.json()
         if data.get("status") == "OK":
-            return data.get("results", [])
+            return data.get("results", []), data.get("next_page_token")
+        return [], None
     except:
-        pass
-    return []
+        return [], None
+
 
 def process_places(places, region_name, keyword, key):
-    results = []
-    for p in places:
-        pid = p.get("place_id")
-        if not pid:
+    extracted = []
+    for place in places:
+        place_id = place.get("place_id")
+        if not place_id:
             continue
-        phone, website = fetch_place_details(pid, key)
-        results.append({
-            "Company Name": p.get("name", "N/A"),
+        phone, website = fetch_place_details(place_id, key)
+        extracted.append({
+            "Company Name": place.get("name", "N/A"),
             "Region": region_name,
             "Category": keyword.capitalize(),
             "Phone Contact": phone,
             "Website": website,
-            "Physical Address": p.get("vicinity", "N/A"),
-            "Rating": p.get("rating", "N/A"),
-            "Place ID": pid
+            "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
+            "Rating": place.get("rating", "N/A"),
+            "Place ID": place_id,
+            "Lat": place["geometry"]["location"]["lat"],
+            "Lng": place["geometry"]["location"]["lng"],
         })
-    return results
+    return extracted
 
-# Logic
+
+# ====================== MAIN LOGIC ======================
 current_params = f"{region}_{search_query}_{radius}"
+
 if st.session_state.last_params != current_params:
     st.session_state.stored_places = []
     st.session_state.used_points = set()
@@ -149,51 +263,76 @@ if st.session_state.last_params != current_params:
 grid = REGION_GRIDS[region]
 total_points = len(grid)
 
-# First load (6 points)
-if not st.session_state.stored_places and st.session_state.point_index == 0:
-    with st.spinner(f"Scanning {region}..."):
+# First load
+if len(st.session_state.stored_places) == 0 and st.session_state.point_index == 0:
+    with st.spinner(f"Scanning first points in {region}..."):
         batch = []
-        for i in range(min(6, total_points)):
-            places = nearby_search(grid[i][0], grid[i][1], search_query, api_key, radius)
+        for i in range(min(3, total_points)):
+            lat, lng = grid[i]
+            places, _ = nearby_search(lat, lng, search_query, api_key, radius)
             batch.extend(process_places(places, region, search_query, api_key))
             st.session_state.used_points.add(i)
             st.session_state.point_index = i + 1
             time.sleep(1.1)
-        if batch:
-            df = pd.DataFrame(batch).drop_duplicates(subset=["Place ID"])
-            st.session_state.stored_places = df.to_dict("records")
 
-# Show results
+        df_temp = pd.DataFrame(batch)
+        if not df_temp.empty:
+            df_temp = df_temp.drop_duplicates(subset=["Place ID"])
+            st.session_state.stored_places = df_temp.to_dict("records")
+
+# Display
 if st.session_state.stored_places:
-    df = pd.DataFrame(st.session_state.stored_places).drop_duplicates(subset=["Place ID"]).reset_index(drop=True)
-    df.insert(0, "No.", range(1, len(df)+1))
+    df = pd.DataFrame(st.session_state.stored_places)
+    df = df.drop_duplicates(subset=["Place ID"]).reset_index(drop=True)
+    df.insert(0, "No.", range(1, len(df) + 1))
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Places", len(df))
-    c2.metric("Region", region)
-    c3.metric("Keyword", search_query.capitalize())
-    c4.metric("Points", f"{len(st.session_state.used_points)}/{total_points}")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Total Unique Places", len(df))
+    m2.metric("Region", region)
+    m3.metric("Keyword", search_query.capitalize())
+    m4.metric("Points Scanned", f"{len(st.session_state.used_points)} / {total_points}")
 
-    st.dataframe(df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]], use_container_width=True, height=450)
+    st.markdown("---")
+    st.subheader(f"Results for “{search_query}” in {region}")
+
+    st.dataframe(
+        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
+        use_container_width=True,
+        height=460
+    )
 
     remaining = total_points - len(st.session_state.used_points)
+
     if remaining > 0:
-        if st.button(f"Load Next Batch ({remaining} left)", type="primary"):
-            with st.spinner("Loading more..."):
+        if st.button(f"🔄 Load Next Batch  ({remaining} points left)", type="primary", use_container_width=True):
+            with st.spinner("Fetching next batch..."):
                 new_batch = []
-                for i in range(st.session_state.point_index, min(st.session_state.point_index + 3, total_points)):
-                    places = nearby_search(grid[i][0], grid[i][1], search_query, api_key, radius)
+                points_to_load = min(3, remaining)
+                for i in range(st.session_state.point_index, st.session_state.point_index + points_to_load):
+                    if i >= total_points:
+                        break
+                    lat, lng = grid[i]
+                    places, _ = nearby_search(lat, lng, search_query, api_key, radius)
                     new_batch.extend(process_places(places, region, search_query, api_key))
                     st.session_state.used_points.add(i)
                     time.sleep(1.1)
-                st.session_state.point_index += 3
+
+                st.session_state.point_index += points_to_load
                 combined = st.session_state.stored_places + new_batch
-                st.session_state.stored_places = pd.DataFrame(combined).drop_duplicates(subset=["Place ID"]).to_dict("records")
+                df_combined = pd.DataFrame(combined).drop_duplicates(subset=["Place ID"])
+                st.session_state.stored_places = df_combined.to_dict("records")
                 st.rerun()
     else:
-        st.success("All points scanned.")
+        st.success("✅ All grid points in this region have been scanned.")
 
+    st.markdown("---")
     csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("Export to CSV", csv, f"{region}_{search_query}_leads.csv", "text/csv")
+    st.download_button(
+        label="📥 Export All Leads to CSV",
+        data=csv,
+        file_name=f"{region}_{search_query}_leads.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
 else:
-    st.warning("No places found yet. Try another keyword or increase radius.")
+    st.warning("No places found yet. Try a different keyword or increase the radius.")
