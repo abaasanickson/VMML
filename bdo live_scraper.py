@@ -107,6 +107,7 @@ QUOTES = [
     "Great things never come from comfort zones."
 ]
 
+
 def get_greeting():
     hour = datetime.now().hour
     if 5 <= hour < 12:
@@ -117,6 +118,7 @@ def get_greeting():
         return "Good evening"
     else:
         return "Hello"
+
 
 quote = random.choice(QUOTES)
 greeting = get_greeting()
@@ -159,23 +161,23 @@ st.sidebar.info("Larger radius = better coverage but more duplicates (auto-remov
 
 # ====================== REGION GRIDS ======================
 REGION_GRIDS = {
-   "Kampala": [
-    (0.3136, 32.5811),   # Central
-    (0.3300, 32.5800),   # Kawempe
-    (0.3500, 32.5700),   # Kawempe North
-    (0.3200, 32.6200),   # Nakawa
-    (0.3400, 32.6400),   # Nakawa / Ntinda
-    (0.3000, 32.6100),   # Nakawa South
-    (0.3100, 32.5400),   # Lubaga
-    (0.3300, 32.5200),   # Lubaga West
-    (0.2900, 32.5500),   # Lubaga South
-    (0.2800, 32.5800),   # Makindye
-    (0.2600, 32.5600),   # Makindye South
-    (0.2900, 32.6000),   # Makindye East
-    (0.3200, 32.5600),   # Mengo
-    (0.3400, 32.6000),   # Kololo / Naguru
-    (0.3000, 32.5900),   # Nsambya
-],
+    "Kampala": [
+        (0.3136, 32.5811),  # Central
+        (0.3300, 32.5800),  # Kawempe
+        (0.3500, 32.5700),  # Kawempe North
+        (0.3200, 32.6200),  # Nakawa
+        (0.3400, 32.6400),  # Nakawa / Ntinda
+        (0.3000, 32.6100),  # Nakawa South
+        (0.3100, 32.5400),  # Lubaga
+        (0.3300, 32.5200),  # Lubaga West
+        (0.2900, 32.5500),  # Lubaga South
+        (0.2800, 32.5800),  # Makindye
+        (0.2600, 32.5600),  # Makindye South
+        (0.2900, 32.6000),  # Makindye East
+        (0.3200, 32.5600),  # Mengo
+        (0.3400, 32.6000),  # Kololo / Naguru
+        (0.3000, 32.5900),  # Nsambya
+    ],
     "Wakiso": [
         (0.0640, 32.4600), (0.1000, 32.5000), (0.0400, 32.5200),
         (0.0000, 32.4800), (0.0800, 32.4200), (0.1200, 32.4800),
@@ -200,12 +202,13 @@ if "last_params" not in st.session_state:
 if "point_index" not in st.session_state:
     st.session_state.point_index = 0
 
+
 # ====================== HELPER FUNCTIONS ======================
 def fetch_place_details(place_id, key):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
         "place_id": place_id,
-        "fields": "formatted_phone_number,international_phone_number,website,types", # <--- Add "types" here
+        "fields": "formatted_phone_number,international_phone_number,website,types",  # <--- Add "types" here
         "key": key
     }
     try:
@@ -215,13 +218,14 @@ def fetch_place_details(place_id, key):
             result = data.get("result", {})
             phone = result.get("formatted_phone_number") or result.get("international_phone_number") or "N/A"
             website = result.get("website") or "N/A"
-            
+
             # <--- Add this block to parse the types into a readable string --->
             raw_types = result.get("types", [])
-            filtered_types = [t.replace("_", " ").title() for t in raw_types if t not in ["point_of_interest", "establishment"]]
+            filtered_types = [t.replace("_", " ").title() for t in raw_types if
+                              t not in ["point_of_interest", "establishment"]]
             business_deals_in = ", ".join(filtered_types) if filtered_types else "N/A"
-            
-            return phone, website, business_deals_in # <--- Return the new variable
+
+            return phone, website, business_deals_in  # <--- Return the new variable
     except:
         pass
     return "N/A", "N/A", "N/A"
@@ -251,10 +255,10 @@ def process_places(places, region_name, keyword, key):
         place_id = place.get("place_id")
         if not place_id:
             continue
-        
+
         # Unpack the 3 values now returned
         phone, website, business_deals_in = fetch_place_details(place_id, key)
-        
+
         extracted.append({
             "Company Name": place.get("name", "N/A"),
             "Region": region_name,
@@ -316,7 +320,7 @@ if st.session_state.stored_places:
     st.subheader(f"Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Name","Details", "Contact", "Address", "Rating", "Website"]],
+        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
