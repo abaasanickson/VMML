@@ -53,7 +53,7 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
     }
     .stDownloadButton > button {
-        background: linear-gradient(90deg, #10b981, #059669);
+        background: linear-gradient(90deg, #775144, #C09891);
         color: white;
         border-radius: 10px;
         font-weight: 600;
