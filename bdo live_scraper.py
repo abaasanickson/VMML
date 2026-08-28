@@ -7,8 +7,8 @@ from datetime import datetime
 
 # ====================== PAGE CONFIG ======================
 st.set_page_config(
-    page_title="Full Region Lead Generator",
-    page_icon="📍",
+    page_title="VMML BDO BUSINESS GENERATOR",
+    #page_icon="📍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -66,19 +66,19 @@ st.markdown("""
         margin-bottom: 24px;
     }
     .welcome-title {
-        font-size: 1.6rem;
+        font-size: 1.6rem;38bdf8
         font-weight: 700;
-        color: #38bdf8;
+        color: #291C0E;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
-        color: #94a3b8;
+        color: #6E473B;
         font-size: 1rem;
         margin-bottom: 14px;
     }
     .quote {
         font-style: italic;
-        color: #cbd5e1;
+        color: #A78D78;
         border-left: 4px solid #3b82f6;
         padding-left: 16px;
         margin-top: 12px;
@@ -107,22 +107,22 @@ QUOTES = [
     "Great things never come from comfort zones."
 ]
 
-
 from datetime import datetime, timezone, timedelta
+
 
 def get_greeting():
     # Define EAT (East Africa Time) which is UTC+3
     eat_timezone = timezone(timedelta(hours=3))
     hour = datetime.now(eat_timezone).hour
-    
+
     if 5 <= hour < 12:
-        return "Good morning"
+        return "Good morning Alison"
     elif 12 <= hour < 17:
-        return "Good afternoon"
+        return "Good afternoon Alison"
     elif 17 <= hour < 22:
-        return "Good evening"
+        return "Good evening Alison"
     else:
-        return "Hello"
+        return "Hello Alison"
 
 
 quote = random.choice(QUOTES)
@@ -130,13 +130,13 @@ greeting = get_greeting()
 
 st.markdown(f"""
 <div class="welcome-card">
-    <div class="welcome-title">{greeting} 👋 Ready to generate leads?</div>
+    <div class="welcome-title">{greeting}  Ready to generate leads?</div>
     <div class="welcome-subtitle">Full coverage across Kampala, Wakiso & Mukono</div>
     <div class="quote">“{quote}”</div>
 </div>
 """, unsafe_allow_html=True)
 
-st.title("📍 Full Region Business Lead Generator")
+st.title("Full Region Business Lead Generator")
 st.caption("Grid-based Nearby Search • Complete regional coverage • Deduplicated results")
 
 # ====================== SIDEBAR ======================
@@ -144,7 +144,7 @@ st.sidebar.markdown("### ⚙️ Search Settings")
 
 region = st.sidebar.selectbox(
     "Select Region",
-    ["Kampala", "Wakiso", "Mukono", "Western Uganda","Masaka","Jinja"]
+    ["Kampala", "Wakiso", "Mukono", "Western Uganda", "Masaka", "Jinja"]
 )
 
 search_query = st.sidebar.text_input(
@@ -167,59 +167,59 @@ st.sidebar.info("Larger radius = better coverage but more duplicates (auto-remov
 # ====================== REGION GRIDS ======================
 REGION_GRIDS = {
     "Kampala": [
-        (0.3136, 32.5811),   # Central
-        (0.3300, 32.5800),   # Kawempe
-        (0.3500, 32.5700),   # Kawempe North
-        (0.3200, 32.6200),   # Nakawa
-        (0.3400, 32.6400),   # Nakawa / Ntinda
-        (0.3000, 32.6100),   # Nakawa South
-        (0.3100, 32.5400),   # Lubaga
-        (0.3300, 32.5200),   # Lubaga West
-        (0.2900, 32.5500),   # Lubaga South
-        (0.2800, 32.5800),   # Makindye
-        (0.2600, 32.5600),   # Makindye South
-        (0.2900, 32.6000),   # Makindye East
-        (0.3200, 32.5600),   # Mengo
-        (0.3400, 32.6000),   # Kololo / Naguru
-        (0.3000, 32.5900),   # Nsambya
+        (0.3136, 32.5811),  # Central
+        (0.3300, 32.5800),  # Kawempe
+        (0.3500, 32.5700),  # Kawempe North
+        (0.3200, 32.6200),  # Nakawa
+        (0.3400, 32.6400),  # Nakawa / Ntinda
+        (0.3000, 32.6100),  # Nakawa South
+        (0.3100, 32.5400),  # Lubaga
+        (0.3300, 32.5200),  # Lubaga West
+        (0.2900, 32.5500),  # Lubaga South
+        (0.2800, 32.5800),  # Makindye
+        (0.2600, 32.5600),  # Makindye South
+        (0.2900, 32.6000),  # Makindye East
+        (0.3200, 32.5600),  # Mengo
+        (0.3400, 32.6000),  # Kololo / Naguru
+        (0.3000, 32.5900),  # Nsambya
     ],
     "Wakiso": [
-        (0.0640, 32.4600),   # Wakiso Town / Central
-        (0.1000, 32.5000),   # Matugga
-        (0.0400, 32.5200),   # Kawempe-Matugga corridor
-        (0.0000, 32.4800),   # Nansana
-        (0.0800, 32.4200),   # Kakiri
-        (0.1200, 32.4800),   # Gombe
-        (0.0500, 32.4000),   # Mende
-        (0.0200, 32.5500),   # Kira / Namugongo
+        (0.0640, 32.4600),  # Wakiso Town / Central
+        (0.1000, 32.5000),  # Matugga
+        (0.0400, 32.5200),  # Kawempe-Matugga corridor
+        (0.0000, 32.4800),  # Nansana
+        (0.0800, 32.4200),  # Kakiri
+        (0.1200, 32.4800),  # Gombe
+        (0.0500, 32.4000),  # Mende
+        (0.0200, 32.5500),  # Kira / Namugongo
         (-0.0200, 32.5200),  # Makindye-Ssabagabo / Entebbe Road
-        (0.0900, 32.5500),   # Kasangati / Nangabo
-        (0.0300, 32.4500),   # Buloba
-        (0.0700, 32.3800),   # Ssisa
+        (0.0900, 32.5500),  # Kasangati / Nangabo
+        (0.0300, 32.4500),  # Buloba
+        (0.0700, 32.3800),  # Ssisa
     ],
     "Mukono": [
-        (0.3530, 32.7550),   # Mukono Municipality (Central)
-        (0.3200, 32.7200),   # Seeta / Bweyogerere border
-        (0.3800, 32.7800),   # Nama
-        (0.3000, 32.7800),   # Mukono South / Katosi road
-        (0.4000, 32.7300),   # Kyampisi
-        (0.3500, 32.7000),   # Goma
-        (0.2800, 32.7400),   # Mpatta
-        (0.3700, 32.8200),   # Nakisunga
-        (0.3300, 32.8000),   # Ntenjeru-Kisoga
-        (0.4100, 32.7600),   # Nakifuma
+        (0.3530, 32.7550),  # Mukono Municipality (Central)
+        (0.3200, 32.7200),  # Seeta / Bweyogerere border
+        (0.3800, 32.7800),  # Nama
+        (0.3000, 32.7800),  # Mukono South / Katosi road
+        (0.4000, 32.7300),  # Kyampisi
+        (0.3500, 32.7000),  # Goma
+        (0.2800, 32.7400),  # Mpatta
+        (0.3700, 32.8200),  # Nakisunga
+        (0.3300, 32.8000),  # Ntenjeru-Kisoga
+        (0.4100, 32.7600),  # Nakifuma
     ],
     "Western Uganda": [
         (-0.6053, 30.6552),  # Mbarara City (Central)
         (-0.6200, 30.6400),  # Mbarara - Kakoba / Nyamitanga
-        (0.6725, 30.2917),   # Fort Portal City (Kabarole)
+        (0.6725, 30.2917),  # Fort Portal City (Kabarole)
         (-1.2486, 29.9888),  # Kabale Town
         (-0.2756, 30.2744),  # Bushenyi / Ishaka
-        (0.4423, 30.3547),   # Kasese Town
+        (0.4423, 30.3547),  # Kasese Town
         (-0.9942, 30.2281),  # Ntungamo
         (-0.8353, 30.4078),  # Rukungiri
-        (0.1287, 31.0531),   # Hoima City (Bunyoro)
-        (1.0264, 30.5516),   # Masindi
+        (0.1287, 31.0531),  # Hoima City (Bunyoro)
+        (1.0264, 30.5516),  # Masindi
     ],
     "Masaka": [
         (-0.3476, 31.7356),  # Masaka City (Central)
@@ -232,13 +232,13 @@ REGION_GRIDS = {
         (-0.2800, 31.8100),  # Masaka Rural / Kalungu border
     ],
     "Jinja": [
-        (0.4479, 33.2026),   # Jinja City (Central / CBD)
-        (0.4300, 33.1800),   # Walukuba / Masese
-        (0.4650, 33.2200),   # Bugembe / Kimaka
-        (0.4200, 33.2200),   # Danida / Nile Crescent
-        (0.4800, 33.2500),   # Kakira
-        (0.4100, 33.1500),   # Buwenge Road corridor
-        (0.4500, 33.2800),   # Busedde
+        (0.4479, 33.2026),  # Jinja City (Central / CBD)
+        (0.4300, 33.1800),  # Walukuba / Masese
+        (0.4650, 33.2200),  # Bugembe / Kimaka
+        (0.4200, 33.2200),  # Danida / Nile Crescent
+        (0.4800, 33.2500),  # Kakira
+        (0.4100, 33.1500),  # Buwenge Road corridor
+        (0.4500, 33.2800),  # Busedde
     ]
 }
 
@@ -370,7 +370,7 @@ if st.session_state.stored_places:
     st.subheader(f"Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Company Name","Business Deals In", "Phone Contact", "Physical Address", "Rating", "Website"]],
+        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
