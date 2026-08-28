@@ -205,7 +205,7 @@ def fetch_place_details(place_id, key):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
     params = {
         "place_id": place_id,
-        "fields": "formatted_phone_number,international_phone_number,website",
+        "fields": "formatted_phone_number,international_phone_number,website,types", # <--- Add "types" here
         "key": key
     }
     try:
@@ -215,10 +215,16 @@ def fetch_place_details(place_id, key):
             result = data.get("result", {})
             phone = result.get("formatted_phone_number") or result.get("international_phone_number") or "N/A"
             website = result.get("website") or "N/A"
-            return phone, website
+            
+            # <--- Add this block to parse the types into a readable string --->
+            raw_types = result.get("types", [])
+            filtered_types = [t.replace("_", " ").title() for t in raw_types if t not in ["point_of_interest", "establishment"]]
+            business_deals_in = ", ".join(filtered_types) if filtered_types else "N/A"
+            
+            return phone, website, business_deals_in # <--- Return the new variable
     except:
         pass
-    return "N/A", "N/A"
+    return "N/A", "N/A", "N/A"
 
 
 def nearby_search(lat, lng, keyword, key, radius_m):
@@ -245,11 +251,15 @@ def process_places(places, region_name, keyword, key):
         place_id = place.get("place_id")
         if not place_id:
             continue
-        phone, website = fetch_place_details(place_id, key)
+        
+        # Unpack the 3 values now returned
+        phone, website, business_deals_in = fetch_place_details(place_id, key)
+        
         extracted.append({
             "Company Name": place.get("name", "N/A"),
             "Region": region_name,
             "Category": keyword.capitalize(),
+            "Business Deals In": business_deals_in,  # <--- Add the new column here
             "Phone Contact": phone,
             "Website": website,
             "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
