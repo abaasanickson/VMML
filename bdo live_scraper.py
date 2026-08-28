@@ -16,75 +16,107 @@ st.set_page_config(
 # ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #e2e8f0;
+        background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 60%, #020617 100%);
+        color: #f1f5f9;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border-right: 1px solid #334155;
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(51, 65, 85, 0.5);
     }
     h1, h2, h3 {
-        color: #f8fafc !important;
+        color: #ffffff !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        letter-spacing: -0.025em;
     }
     div[data-testid="stMetric"] {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 16px;
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(51, 65, 85, 0.6);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        border-color: rgba(56, 189, 248, 0.4);
+        box-shadow: 0 8px 25px -4px rgba(56, 189, 248, 0.15);
     }
     div[data-testid="stMetric"] label {
         color: #94a3b8 !important;
+        font-size: 0.85rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
     div[data-testid="stMetric"] div {
         color: #38bdf8 !important;
-        font-weight: 600;
+        font-weight: 700;
     }
     .stButton > button {
-        background: linear-gradient(90deg, #3b82f6, #06b6d4);
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
-        border: none;
-        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         padding: 0.6rem 1.4rem;
         font-weight: 600;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .stButton > button:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        border-color: rgba(255, 255, 255, 0.2);
     }
     .stDownloadButton > button {
-        background: linear-gradient(90deg, #10b981, #059669);
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
         color: white;
-        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
         font-weight: 600;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stDownloadButton > button:hover {
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
     }
     .welcome-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 24px 28px;
+        background: linear-gradient(135deg, rgba(30, 58, 95, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 20px;
+        padding: 28px 32px;
         margin-bottom: 24px;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
     }
     .welcome-title {
-        font-size: 1.6rem;
+        font-size: 1.7rem;
         font-weight: 700;
         color: #38bdf8;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
         color: #94a3b8;
-        font-size: 1rem;
-        margin-bottom: 14px;
+        font-size: 1.05rem;
+        margin-bottom: 16px;
     }
     .quote {
         font-style: italic;
-        color: #cbd5e1;
-        border-left: 4px solid #3b82f6;
+        color: #e2e8f0;
+        border-left: 3px solid #38bdf8;
         padding-left: 16px;
-        margin-top: 12px;
+        margin-top: 14px;
+        font-size: 0.95rem;
+        opacity: 0.9;
     }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_approval_html=True)
 
 # ====================== LOAD API KEY FROM SECRETS ======================
 try:
