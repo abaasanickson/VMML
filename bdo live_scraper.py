@@ -159,24 +159,22 @@ st.sidebar.info("Larger radius = better coverage but more duplicates (auto-remov
 
 # ====================== REGION GRIDS ======================
 REGION_GRIDS = {
-    "Kampala": [
-    (-0.3476, 32.5825),  # Central
-    (-0.3200, 32.5800),  # Kawempe
-    (-0.3000, 32.5600),  # Kawempe North
-    (-0.3300, 32.6200),  # Nakawa
-    (-0.3100, 32.6400),  # Nakawa East
-    (-0.3500, 32.6100),  # Nakawa South
-    (-0.3200, 32.5400),  # Lubaga
-    (-0.3000, 32.5200),  # Lubaga West
-    (-0.3500, 32.5400),  # Lubaga South
-    (-0.3700, 32.5800),  # Makindye
-    (-0.3900, 32.5600),  # Makindye South
-    (-0.3600, 32.6000),  # Makindye East
-    (-0.3400, 32.5600),  # Mengo
-    (-0.3100, 32.6000),  # Ntinda
-    (-0.3600, 32.5900),  # Nsambya
-    (-0.2800, 32.5800),  # Extra North
-    (-0.3800, 32.6200),  # Extra South-East
+   "Kampala": [
+    (0.3136, 32.5811),   # Central
+    (0.3300, 32.5800),   # Kawempe
+    (0.3500, 32.5700),   # Kawempe North
+    (0.3200, 32.6200),   # Nakawa
+    (0.3400, 32.6400),   # Nakawa / Ntinda
+    (0.3000, 32.6100),   # Nakawa South
+    (0.3100, 32.5400),   # Lubaga
+    (0.3300, 32.5200),   # Lubaga West
+    (0.2900, 32.5500),   # Lubaga South
+    (0.2800, 32.5800),   # Makindye
+    (0.2600, 32.5600),   # Makindye South
+    (0.2900, 32.6000),   # Makindye East
+    (0.3200, 32.5600),   # Mengo
+    (0.3400, 32.6000),   # Kololo / Naguru
+    (0.3000, 32.5900),   # Nsambya
 ],
     "Wakiso": [
         (0.0640, 32.4600), (0.1000, 32.5000), (0.0400, 32.5200),
