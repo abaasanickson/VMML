@@ -203,9 +203,10 @@ if "point_index" not in st.session_state:
 # ====================== HELPER FUNCTIONS ======================
 def fetch_place_details(place_id, key):
     url = "https://maps.googleapis.com/maps/api/place/details/json"
+    # Added "types" to the requested fields to capture what the business deals in/classifies as
     params = {
         "place_id": place_id,
-        "fields": "formatted_phone_number,international_phone_number,website",
+        "fields": "formatted_phone_number,international_phone_number,website,types",
         "key": key
     }
     try:
@@ -215,10 +216,17 @@ def fetch_place_details(place_id, key):
             result = data.get("result", {})
             phone = result.get("formatted_phone_number") or result.get("international_phone_number") or "N/A"
             website = result.get("website") or "N/A"
-            return phone, website
+            
+            # Process and format the Google types list into a readable string (e.g., "Hardware Store, Home Goods")
+            raw_types = result.get("types", [])
+            # Filter out generic tags like 'point_of_interest' or 'establishment' for cleaner descriptions
+            filtered_types = [t.replace("_", " ").title() for t in raw_types if t not in ["point_of_interest", "establishment"]]
+            business_deals_in = ", ".join(filtered_types) if filtered_types else "N/A"
+            
+            return phone, website, business_deals_in
     except:
         pass
-    return "N/A", "N/A"
+    return "N/A", "N/A", "N/A"
 
 
 def nearby_search(lat, lng, keyword, key, radius_m):
@@ -245,11 +253,15 @@ def process_places(places, region_name, keyword, key):
         place_id = place.get("place_id")
         if not place_id:
             continue
-        phone, website = fetch_place_details(place_id, key)
+        
+        # Unpack the 3 values returned by fetch_place_details
+        phone, website, business_deals_in = fetch_place_details(place_id, key)
+        
         extracted.append({
             "Company Name": place.get("name", "N/A"),
             "Region": region_name,
             "Category": keyword.capitalize(),
+            "Business Deals In": business_deals_in,  # <--- New Column Added Here
             "Phone Contact": phone,
             "Website": website,
             "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
@@ -305,8 +317,9 @@ if st.session_state.stored_places:
     st.markdown("---")
     st.subheader(f"Results for “{search_query}” in {region}")
 
+    # Included "Business Deals In" in the Streamlit dataframe view
     st.dataframe(
-        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
+        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
