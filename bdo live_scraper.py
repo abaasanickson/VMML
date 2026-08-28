@@ -316,7 +316,7 @@ if st.session_state.stored_places:
     st.subheader(f"Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
+        df[["No.", "Name","Details", "Contact", "Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
