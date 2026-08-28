@@ -13,46 +13,33 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ====================== CUSTOM CSS (Modern UI) ======================
+# ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
-    /* Main background */
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #e2e8f0;
     }
-
-    /* Sidebar */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
         border-right: 1px solid #334155;
     }
-
-    /* Headers */
     h1, h2, h3 {
         color: #f8fafc !important;
-        font-family: 'Segoe UI', sans-serif;
     }
-
-    /* Metric cards */
     div[data-testid="stMetric"] {
         background: rgba(30, 41, 59, 0.7);
         border: 1px solid #334155;
         border-radius: 12px;
         padding: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
-
     div[data-testid="stMetric"] label {
         color: #94a3b8 !important;
     }
-
     div[data-testid="stMetric"] div {
         color: #38bdf8 !important;
         font-weight: 600;
     }
-
-    /* Buttons */
     .stButton > button {
         background: linear-gradient(90deg, #3b82f6, #06b6d4);
         color: white;
@@ -60,76 +47,51 @@ st.markdown("""
         border-radius: 10px;
         padding: 0.6rem 1.4rem;
         font-weight: 600;
-        transition: all 0.3s ease;
     }
-
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
     }
-
-    /* Download button */
     .stDownloadButton > button {
         background: linear-gradient(90deg, #10b981, #059669);
         color: white;
         border-radius: 10px;
         font-weight: 600;
     }
-
-    /* Dataframe */
-    .stDataFrame {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid #334155;
-    }
-
-    /* Input fields */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div {
-        background-color: #1e293b;
-        color: #f1f5f9;
-        border: 1px solid #475569;
-        border-radius: 8px;
-    }
-
-    /* Welcome card */
     .welcome-card {
         background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
         border: 1px solid #334155;
         border-radius: 16px;
         padding: 24px 28px;
         margin-bottom: 24px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
-
     .welcome-title {
         font-size: 1.6rem;
         font-weight: 700;
         color: #38bdf8;
         margin-bottom: 6px;
     }
-
     .welcome-subtitle {
         color: #94a3b8;
         font-size: 1rem;
         margin-bottom: 14px;
     }
-
     .quote {
         font-style: italic;
         color: #cbd5e1;
         border-left: 4px solid #3b82f6;
         padding-left: 16px;
         margin-top: 12px;
-        font-size: 0.95rem;
-    }
-
-    /* Success / info boxes */
-    .stSuccess, .stInfo, .stWarning {
-        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ====================== LOAD API KEY FROM SECRETS ======================
+try:
+    api_key = st.secrets["GOOGLE_MAPS_API_KEY"]
+except:
+    st.error("API key not configured. Please contact the administrator.")
+    st.stop()
 
 # ====================== QUOTES & WELCOME ======================
 QUOTES = [
@@ -148,15 +110,14 @@ QUOTES = [
 def get_greeting():
     hour = datetime.now().hour
     if 5 <= hour < 12:
-        return "Good morning Alison"
+        return "Good morning"
     elif 12 <= hour < 17:
-        return "Good afternoon Alison"
+        return "Good afternoon"
     elif 17 <= hour < 22:
-        return "Good evening Alison"
+        return "Good evening"
     else:
-        return "Hello Alison"
+        return "Hello"
 
-# ====================== HEADER ======================
 quote = random.choice(QUOTES)
 greeting = get_greeting()
 
@@ -173,12 +134,6 @@ st.caption("Grid-based Nearby Search • Complete regional coverage • Deduplic
 
 # ====================== SIDEBAR ======================
 st.sidebar.markdown("### ⚙️ Search Settings")
-
-api_key = st.sidebar.text_input(
-    "Google Maps API Key",
-    type="password",
-    help="Enable Places API in Google Cloud Console"
-)
 
 region = st.sidebar.selectbox(
     "Select Region",
@@ -200,7 +155,6 @@ radius = st.sidebar.slider(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Tips**")
 st.sidebar.info("Larger radius = better coverage but more duplicates (auto-removed)")
 
 # ====================== REGION GRIDS ======================
@@ -268,14 +222,10 @@ def nearby_search(lat, lng, keyword, key, radius_m):
     try:
         r = requests.get(url, params=params, timeout=12)
         data = r.json()
-        status = data.get("status")
-        if status == "OK":
+        if data.get("status") == "OK":
             return data.get("results", []), data.get("next_page_token")
-        elif status == "ZERO_RESULTS":
-            return [], None
-        else:
-            return [], None
-    except Exception:
+        return [], None
+    except:
         return [], None
 
 
@@ -302,10 +252,6 @@ def process_places(places, region_name, keyword, key):
 
 
 # ====================== MAIN LOGIC ======================
-if not api_key:
-    st.info("👈 Enter your **Google Maps API Key** in the sidebar to begin.")
-    st.stop()
-
 current_params = f"{region}_{search_query}_{radius}"
 
 if st.session_state.last_params != current_params:
@@ -334,13 +280,12 @@ if len(st.session_state.stored_places) == 0 and st.session_state.point_index == 
             df_temp = df_temp.drop_duplicates(subset=["Place ID"])
             st.session_state.stored_places = df_temp.to_dict("records")
 
-# Display results
+# Display
 if st.session_state.stored_places:
     df = pd.DataFrame(st.session_state.stored_places)
     df = df.drop_duplicates(subset=["Place ID"]).reset_index(drop=True)
     df.insert(0, "No.", range(1, len(df) + 1))
 
-    # Metrics
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Total Unique Places", len(df))
     m2.metric("Region", region)
@@ -389,6 +334,5 @@ if st.session_state.stored_places:
         mime="text/csv",
         use_container_width=True
     )
-
 else:
     st.warning("No places found yet. Try a different keyword or increase the radius.")
