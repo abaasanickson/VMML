@@ -131,7 +131,7 @@ def get_greeting():
         return "Hello "
 
 
-quote = import time
+quote = get_live_quote()
 import random
 import pandas as pd
 import requests
