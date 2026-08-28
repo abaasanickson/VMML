@@ -108,8 +108,13 @@ QUOTES = [
 ]
 
 
+from datetime import datetime, timezone, timedelta
+
 def get_greeting():
-    hour = datetime.now().hour
+    # Define EAT (East Africa Time) which is UTC+3
+    eat_timezone = timezone(timedelta(hours=3))
+    hour = datetime.now(eat_timezone).hour
+    
     if 5 <= hour < 12:
         return "Good morning"
     elif 12 <= hour < 17:
