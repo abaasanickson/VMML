@@ -148,13 +148,13 @@ QUOTES = [
 def get_greeting():
     hour = datetime.now().hour
     if 5 <= hour < 12:
-        return "Good morning"
+        return "Good morning Alison"
     elif 12 <= hour < 17:
-        return "Good afternoon"
+        return "Good afternoon Alison"
     elif 17 <= hour < 22:
-        return "Good evening"
+        return "Good evening Alison"
     else:
-        return "Hello"
+        return "Hello Alison"
 
 # ====================== HEADER ======================
 quote = random.choice(QUOTES)
