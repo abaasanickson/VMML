@@ -42,7 +42,7 @@ search_query = st.sidebar.text_input(
     help="Type any category (e.g., School, Hardware, Pharmacy, Supermarket)",
 )
 
-# Initialize Session State to manage manual page fetching without wiping data
+# Initialize Session State
 if "stored_places" not in st.session_state:
   st.session_state.stored_places = []
 if "next_token" not in st.session_state:
@@ -76,8 +76,9 @@ def fetch_batch(target_region, query_term, key, page_token=None):
   url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
   if page_token:
+    # Google mandates a strict 3-second delay so the token activates on their server side
+    time.sleep(3)
     params = {"pagetoken": page_token, "key": key}
-    time.sleep(3)  # Google token activation delay
   else:
     full_query = f"{query_term} in {target_region}, Uganda"
     params = {"query": full_query, "key": key}
@@ -119,22 +120,19 @@ def fetch_batch(target_region, query_term, key, page_token=None):
 if api_key:
   current_params_key = f"{region}_{search_query}"
 
-  # Reset state if user changes location or keyword
+  # Reset when search parameters change
   if st.session_state.last_query_params != current_params_key:
     st.session_state.stored_places = []
     st.session_state.next_token = None
     st.session_state.last_query_params = current_params_key
 
-    # Fetch initial first batch (Page 1)
     with st.spinner(f"Fetching initial results for '{search_query}'..."):
       batch, token = fetch_batch(region, search_query, api_key)
       st.session_state.stored_places.extend(batch)
       st.session_state.next_token = token
 
-  # Display current dataset in table
   if st.session_state.stored_places:
     df_results = pd.DataFrame(st.session_state.stored_places)
-    # Drop potential duplicates just in case
     df_results = df_results.drop_duplicates(subset=["Company Name"]).reset_index(
         drop=True
     )
@@ -150,12 +148,15 @@ if api_key:
         f"📋 Live Map Results for: '{search_query.capitalize()}' in {region}"
     )
 
+    # Clean interactive table restored
     st.dataframe(df_results, use_container_width=True)
 
     # Manual Pagination / Refresh Button
     if st.session_state.next_token:
       if st.button("🔄 Load Next 20 Places"):
-        with st.spinner("Fetching next batch from Google Maps..."):
+        with st.spinner(
+            "Waiting for Google token validation & fetching next batch..."
+        ):
           batch, token = fetch_batch(
               region, search_query, api_key, st.session_state.next_token
           )
@@ -164,11 +165,14 @@ if api_key:
             st.session_state.next_token = token
             st.rerun()
           else:
-            st.warning("No more extra listings available for this query.")
+            st.warning(
+                "Google has returned no further pages for this exact token."
+            )
+            st.session_state.next_token = None
     else:
       st.info(
-          "✨ You've reached Google's maximum page limit for this search term."
-          " Try changing your keyword or sub-division slightly to fetch more!"
+          "✨ All available pages fetched for this zone/keyword. Switch the"
+          " Sub-Division above to pull more!"
       )
 
     st.markdown("---")
@@ -180,7 +184,7 @@ if api_key:
         mime="text/csv",
     )
   else:
-    st.warning("No records returned for these search parameters.")
+    st.warning("No records returned for these parameters.")
 else:
   st.info(
       "👈 Please enter your **Google Maps API Key** in the sidebar to begin"
