@@ -41,7 +41,7 @@ st.markdown("""
         font-weight: 600;
     }
     .stButton > button {
-        background: linear-gradient(90deg, #808080, #2e2e2e);
+        background: linear-gradient(180deg, #808080, #4c5055);
         color: white;
         border: none;
         border-radius: 10px;
@@ -53,13 +53,13 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
     }
     .stDownloadButton > button {
-        background: linear-gradient(90deg, white, #C09891);
+        background: linear-gradient(90deg, #10b981, #059669);
         color: white;
         border-radius: 10px;
         font-weight: 600;
     }
     .welcome-card {
-        background: linear-gradient(135deg, #775144 0%, #C09891 100%);
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
         border: 1px solid #334155;
         border-radius: 16px;
         padding: 24px 28px;
@@ -94,7 +94,7 @@ except:
     st.stop()
 
 # ====================== QUOTES & WELCOME ======================
-#import requests
+
 
 def get_live_quote():
     try:
@@ -105,9 +105,10 @@ def get_live_quote():
             return f'"{data["content"]}" — {data["author"]}'
     except:
         pass
-    
+
     # Fallback quote just in case the internet drops
     return '"Dream big. Start small. Act now."'
+
 
 # Use this where you display the quote
 selected_quote = get_live_quote()
