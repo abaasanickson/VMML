@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import requests
 import streamlit as st
@@ -34,6 +35,28 @@ search_query = st.sidebar.text_input(
 )
 
 
+def fetch_place_details(place_id, key):
+  """Fetches extra details like phone number and website using Place Details API."""
+  details_url = "https://maps.googleapis.com/maps/api/place/details/json"
+  params = {
+      "place_id": place_id,
+      "fields": "formatted_phone_number,website,international_phone_number",
+      "key": key,
+  }
+  try:
+    response = requests.get(details_url, params=params, timeout=5)
+    data = response.json()
+    if data.get("status") == "OK":
+      result = data.get("result", {})
+      return result.get(
+          "formatted_phone_number",
+          result.get("international_phone_number", "N/A"),
+      ), result.get("website", "N/A")
+  except Exception:
+    pass
+  return "N/A", "N/A"
+
+
 def fetch_google_places(target_region, query_term, key):
   if not key:
     return None  # Prompt user for key if missing
@@ -42,32 +65,57 @@ def fetch_google_places(target_region, query_term, key):
   full_query = f"{query_term} in {target_region}, Uganda"
 
   params = {"query": full_query, "key": key}
+  extracted = []
+  max_pages = 3  # Fetches up to 3 pages (~60 results total)
 
   try:
-    response = requests.get(url, params=params, timeout=10)
-    data = response.json()
+    for page in range(max_pages):
+      response = requests.get(url, params=params, timeout=10)
+      data = response.json()
 
-    if data.get("status") == "OK":
-      places = data.get("results", [])
-      extracted = []
+      status = data.get("status")
+      if status == "OK":
+        places = data.get("results", [])
 
-      for idx, place in enumerate(places, start=1):
-        extracted.append({
-            "No.": idx,
-            "Company Name": place.get("name", "N/A"),
-            "Region": target_region,
-            "Category": query_term.capitalize(),
-            "Phone Contact": "Available via Place Details",
-            "Physical Address": place.get("formatted_address", target_region),
-            "Rating": place.get("rating", "N/A"),
-        })
-      return pd.DataFrame(extracted)
-    else:
-      st.warning(
-          f"API Response Status: {data.get('status')} - Check your API key or"
-          " query quota."
-      )
-      return pd.DataFrame()
+        for place in places:
+          place_id = place.get("place_id")
+          # Fetch phone number & website dynamically for each place
+          phone, website = "N/A", "N/A"
+          if place_id:
+            phone, website = fetch_place_details(place_id, key)
+
+          extracted.append({
+              "Company Name": place.get("name", "N/A"),
+              "Region": target_region,
+              "Category": query_term.capitalize(),
+              "Phone Contact": phone,
+              "Website": website,
+              "Physical Address": place.get("formatted_address", target_region),
+              "Rating": place.get("rating", "N/A"),
+          })
+
+        # Check for next page token
+        next_page_token = data.get("next_page_token")
+        if next_page_token and page < max_pages - 1:
+          # Google requires a short delay before the next_page_token becomes active
+          time.sleep(2)
+          params = {"pagetoken": next_page_token, "key": key}
+        else:
+          break
+      else:
+        if not extracted:
+          st.warning(
+              f"API Response Status: {status} - Check your API key or query"
+              " quota."
+          )
+        break
+
+    if extracted:
+      df = pd.DataFrame(extracted)
+      df.insert(0, "No.", range(1, len(df) + 1))
+      return df
+    return pd.DataFrame()
+
   except Exception as e:
     st.error(f"Connection error: {e}")
     return pd.DataFrame()
