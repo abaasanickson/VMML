@@ -16,72 +16,135 @@ st.set_page_config(
 # ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+    /* Matte Obsidian Luxury Dark Theme */
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #e2e8f0;
+        background: #09090b;
+        color: #f4f4f5;
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
+
+    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border-right: 1px solid #334155;
+        background: #0d0d11;
+        border-right: 1px solid rgba(255, 255, 255, 0.04);
     }
+    
+    /* Typography & Spacing */
     h1, h2, h3 {
-        color: #f8fafc !important;
+        color: #ffffff !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        letter-spacing: -0.035em;
+        font-weight: 700;
     }
+
+    /* Luxury Cards / Metrics */
     div[data-testid="stMetric"] {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 16px;
+        background: rgba(24, 24, 27, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        transition: all 0.3s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
     }
     div[data-testid="stMetric"] label {
-        color: #94a3b8 !important;
+        color: #71717a !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 600;
     }
     div[data-testid="stMetric"] div {
-        color: #38bdf8 !important;
-        font-weight: 600;
+        color: #ffffff !important;
+        font-weight: 700;
+        font-size: 1.7rem !important;
     }
+
+    /* Minimalist Obsidian Action Buttons - Matching the clean typographic aesthetic */
     .stButton > button {
-        background: linear-gradient(90deg, #3b82f6, #06b6d4);
-        color: white;
-        border: none;
+        background: #18181b;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
         padding: 0.6rem 1.4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.85rem;
         font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease;
     }
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        background: #27272a;
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     }
+
+    /* Download Button - Styled to match the same clean minimalist button structure */
     .stDownloadButton > button {
-        background: linear-gradient(90deg, #10b981, #059669);
-        color: white;
+        background: #18181b;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
+        padding: 0.6rem 1.4rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.85rem;
         font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s ease;
     }
+    .stDownloadButton > button:hover {
+        background: #27272a;
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Welcome Banner */
     .welcome-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
-        border: 1px solid #334155;
+        background: rgba(18, 18, 23, 0.7);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 16px;
-        padding: 24px 28px;
+        padding: 28px 32px;
         margin-bottom: 24px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
     }
     .welcome-title {
         font-size: 1.6rem;
         font-weight: 700;
-        color: #38bdf8;
+        color: #ffffff;
+        letter-spacing: -0.025em;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
-        color: #94a3b8;
-        font-size: 1rem;
+        color: #a1a1aa;
+        font-size: 0.95rem;
         margin-bottom: 14px;
+        font-weight: 400;
     }
     .quote {
         font-style: italic;
-        color: #cbd5e1;
-        border-left: 4px solid #3b82f6;
-        padding-left: 16px;
-        margin-top: 12px;
+        color: #d4d4d8;
+        border-left: 2px solid #52525b;
+        padding-left: 14px;
+        margin-top: 14px;
+        font-size: 0.9rem;
+        background: transparent;
     }
 </style>
 """, unsafe_allow_html=True)
