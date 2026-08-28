@@ -46,17 +46,17 @@ st.markdown("""
         border: none;
         border-radius: 10px;
         padding: 0.6rem 1.4rem;
-        font-weight: 600;
+        font-weight: 700;
     }
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
     }
     .stDownloadButton > button {
-        background: linear-gradient(90deg, #10b981, #059669);
+        background: linear-gradient(180deg, #021024, #052659);
         color: white;
         border-radius: 10px;
-        font-weight: 600;
+        font-weight: 700;
     }
     .welcome-card {
         background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
