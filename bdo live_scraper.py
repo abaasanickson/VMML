@@ -274,13 +274,13 @@ def process_places(places, region_name, keyword, key):
         phone, website, business_deals_in = fetch_place_details(place_id, key)
 
         extracted.append({
-            "Company Name": place.get("name", "N/A"),
+            "Name": place.get("name", "N/A"),
             "Region": region_name,
             "Category": keyword.capitalize(),
-            "Business Deals In": business_deals_in,  # <--- Add the new column here
-            "Phone Contact": phone,
+            "Details": business_deals_in,  # <--- Add the new column here
+            "Contact": phone,
             "Website": website,
-            "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
+            "Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
             "Rating": place.get("rating", "N/A"),
             "Place ID": place_id,
             "Lat": place["geometry"]["location"]["lat"],
@@ -334,7 +334,7 @@ if st.session_state.stored_places:
     st.subheader(f"Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
+        df[["No.", "Name", "Contact", "Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
