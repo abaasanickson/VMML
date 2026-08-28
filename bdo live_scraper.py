@@ -142,7 +142,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.title("Full Region Business Lead Generator")
+st.title(" Region Business Lead Generator")
 st.caption("Grid-based Nearby Search • Complete regional coverage • Deduplicated results")
 
 # ====================== SIDEBAR ======================
