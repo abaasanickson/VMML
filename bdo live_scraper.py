@@ -94,18 +94,25 @@ except:
     st.stop()
 
 # ====================== QUOTES & WELCOME ======================
-QUOTES = [
-    "Success is the sum of small efforts repeated day in and day out.",
-    "The only way to do great work is to love what you do.",
-    "Don't watch the clock; do what it does. Keep going.",
-    "Opportunities don't happen. You create them.",
-    "The harder you work for something, the greater you'll feel when you achieve it.",
-    "Dream big. Start small. Act now.",
-    "Consistency is what transforms average into excellence.",
-    "Your future is created by what you do today, not tomorrow.",
-    "Push yourself, because no one else is going to do it for you.",
-    "Great things never come from comfort zones."
-]
+import requests
+
+
+def get_live_quote():
+    try:
+        # Calls a free public quote API
+        response = requests.get("https://api.quotable.io/random", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            return f'"{data["content"]}" — {data["author"]}'
+    except:
+        pass
+
+    # Fallback quote just in case the internet drops
+    return '"Dream big. Start small. Act now."'
+
+
+# Use this where you display the quote
+selected_quote = get_live_quote()
 
 from datetime import datetime, timezone, timedelta
 
@@ -125,7 +132,7 @@ def get_greeting():
         return "Hello Alison"
 
 
-quote = random.choice(QUOTES)
+quote = get_live_quote()
 greeting = get_greeting()
 
 st.markdown(f"""
