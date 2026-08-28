@@ -116,7 +116,7 @@ st.markdown("""
         opacity: 0.9;
     }
 </style>
-""", unsafe_approval_html=True)
+""", unsafe_allow_html=True)
 
 # ====================== LOAD API KEY FROM SECRETS ======================
 try:
