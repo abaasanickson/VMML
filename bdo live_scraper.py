@@ -94,25 +94,23 @@ except:
     st.stop()
 
 # ====================== QUOTES & WELCOME ======================
-import requests
+import streamlit as st
 
-
+@st.cache_data(ttl=60)
 def get_live_quote():
     try:
-        # Calls a free public quote API
-        response = requests.get("https://api.quotable.io/random", timeout=3)
+        response = requests.get("https://zenquotes.io/api/random", timeout=3)
         if response.status_code == 200:
             data = response.json()
-            return f'"{data["content"]}" — {data["author"]}'
-    except:
+            quote_text = data[0]['q']
+            author = data[0]['a']
+            return f'"{quote_text}" — {author}'
+    except Exception as e:
         pass
-
-    # Fallback quote just in case the internet drops
+    
     return '"Dream big. Start small. Act now."'
 
-
-# Use this where you display the quote
-#selected_quote = get_live_quote()
+quote = get_live_quote()
 
 from datetime import datetime, timezone, timedelta
 
