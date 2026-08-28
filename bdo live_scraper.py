@@ -112,7 +112,7 @@ def get_live_quote():
 
 
 # Use this where you display the quote
-selected_quote = get_live_quote()
+#selected_quote = get_live_quote()
 
 from datetime import datetime, timezone, timedelta
 
