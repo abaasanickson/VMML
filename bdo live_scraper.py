@@ -55,7 +55,9 @@ st.markdown("""
     .stDownloadButton > button {
         background: linear-gradient(180deg, #021024, #052659);
         color: white;
+        border: none;
         border-radius: 10px;
+        padding: 0.6rem 1.4rem;
         font-weight: 700;
     }
     .welcome-card {
