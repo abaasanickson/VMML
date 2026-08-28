@@ -162,47 +162,33 @@ st.sidebar.info("Larger radius = better coverage but more duplicates (auto-remov
 # ====================== REGION GRIDS ======================
 REGION_GRIDS = {
     "Kampala": [
-        (0.3136, 32.5811),   # Central
-        (0.3300, 32.5800),   # Kawempe
-        (0.3500, 32.5700),   # Kawempe North
-        (0.3200, 32.6200),   # Nakawa
-        (0.3400, 32.6400),   # Nakawa / Ntinda
-        (0.3000, 32.6100),   # Nakawa South
-        (0.3100, 32.5400),   # Lubaga
-        (0.3300, 32.5200),   # Lubaga West
-        (0.2900, 32.5500),   # Lubaga South
-        (0.2800, 32.5800),   # Makindye
-        (0.2600, 32.5600),   # Makindye South
-        (0.2900, 32.6000),   # Makindye East
-        (0.3200, 32.5600),   # Mengo
-        (0.3400, 32.6000),   # Kololo / Naguru
-        (0.3000, 32.5900),   # Nsambya
+        (0.3136, 32.5811),  # Central
+        (0.3300, 32.5800),  # Kawempe
+        (0.3500, 32.5700),  # Kawempe North
+        (0.3200, 32.6200),  # Nakawa
+        (0.3400, 32.6400),  # Nakawa / Ntinda
+        (0.3000, 32.6100),  # Nakawa South
+        (0.3100, 32.5400),  # Lubaga
+        (0.3300, 32.5200),  # Lubaga West
+        (0.2900, 32.5500),  # Lubaga South
+        (0.2800, 32.5800),  # Makindye
+        (0.2600, 32.5600),  # Makindye South
+        (0.2900, 32.6000),  # Makindye East
+        (0.3200, 32.5600),  # Mengo
+        (0.3400, 32.6000),  # Kololo / Naguru
+        (0.3000, 32.5900),  # Nsambya
     ],
     "Wakiso": [
-        (0.0640, 32.4600),   # Wakiso Town / Central
-        (0.1000, 32.5000),   # Matugga
-        (0.0400, 32.5200),   # Kawempe-Matugga corridor
-        (0.0000, 32.4800),   # Nansana
-        (0.0800, 32.4200),   # Kakiri
-        (0.1200, 32.4800),   # Gombe
-        (0.0500, 32.4000),   # Mende
-        (0.0200, 32.5500),   # Kira / Namugongo
-        (-0.0200, 32.5200),  # Makindye-Ssabagabo / Entebbe Road
-        (0.0900, 32.5500),   # Kasangati / Nangabo
-        (0.0300, 32.4500),   # Buloba
-        (0.0700, 32.3800),   # Ssisa
+        (0.0640, 32.4600), (0.1000, 32.5000), (0.0400, 32.5200),
+        (0.0000, 32.4800), (0.0800, 32.4200), (0.1200, 32.4800),
+        (0.0500, 32.4000), (0.0200, 32.5500), (-0.0200, 32.5200),
+        (0.0900, 32.5500), (0.0300, 32.4500), (0.0700, 32.3800),
     ],
     "Mukono": [
-        (0.3530, 32.7550),   # Mukono Municipality (Central)
-        (0.3200, 32.7200),   # Seeta / Bweyogerere border
-        (0.3800, 32.7800),   # Nama
-        (0.3000, 32.7800),   # Mukono South / Katosi road
-        (0.4000, 32.7300),   # Kyampisi
-        (0.3500, 32.7000),   # Goma
-        (0.2800, 32.7400),   # Mpatta
-        (0.3700, 32.8200),   # Nakisunga
-        (0.3300, 32.8000),   # Ntenjeru-Kisoga
-        (0.4100, 32.7600),   # Nakifuma
+        (0.3530, 32.7550), (0.3200, 32.7200), (0.3800, 32.7800),
+        (0.3000, 32.7800), (0.4000, 32.7300), (0.3500, 32.7000),
+        (0.2800, 32.7400), (0.3700, 32.8200), (0.3300, 32.8000),
+        (0.4100, 32.7600),
     ]
 }
 
@@ -274,13 +260,13 @@ def process_places(places, region_name, keyword, key):
         phone, website, business_deals_in = fetch_place_details(place_id, key)
 
         extracted.append({
-            "Name": place.get("name", "N/A"),
+            "Company Name": place.get("name", "N/A"),
             "Region": region_name,
             "Category": keyword.capitalize(),
-            "Details": business_deals_in,  # <--- Add the new column here
-            "Contact": phone,
+            "Business Deals In": business_deals_in,  # <--- Add the new column here
+            "Phone Contact": phone,
             "Website": website,
-            "Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
+            "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
             "Rating": place.get("rating", "N/A"),
             "Place ID": place_id,
             "Lat": place["geometry"]["location"]["lat"],
@@ -334,7 +320,7 @@ if st.session_state.stored_places:
     st.subheader(f"Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Name", "Contact", "Address", "Rating", "Website"]],
+        df[["No.", "Company Name", "Phone Contact", "Physical Address", "Rating", "Website"]],
         use_container_width=True,
         height=460
     )
