@@ -59,7 +59,7 @@ st.markdown("""
         font-weight: 600;
     }
     .welcome-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+        background: linear-gradient(135deg, #775144 0%, #C09891 100%);
         border: 1px solid #334155;
         border-radius: 16px;
         padding: 24px 28px;
