@@ -6,13 +6,6 @@ import streamlit as st
 from datetime import datetime, timezone, timedelta
 
 # ====================== PAGE CONFIG ======================
-st.set_page_config(
-    page_title="VMML BDO BUSINESS GENERATOR",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
     .stApp {
@@ -67,19 +60,19 @@ st.markdown("""
         margin-bottom: 24px;
     }
     .welcome-title {
-        font-size: 1.6rem;
+        font-size: 1.6rem;38bdf8
         font-weight: 700;
-        color: #f8fafc;
+        color: #291C0E;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
-        color: #94a3b8;
+        color: #6E473B;
         font-size: 1rem;
         margin-bottom: 14px;
     }
     .quote {
         font-style: italic;
-        color: #cbd5e1;
+        color: #A78D78;
         border-left: 4px solid #3b82f6;
         padding-left: 16px;
         margin-top: 12px;
