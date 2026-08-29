@@ -169,6 +169,11 @@ radius = st.sidebar.slider(
     value=5000,
     step=500
 )
+place_type = st.sidebar.selectbox(
+    "Google Place Type (optional)",
+    options=["", "bank", "finance", "school", "hospital", "pharmacy", "supermarket", "store", "restaurant"],
+    help="Leave empty for general keyword search. Use specific type for better results on banks, schools, etc."
+)
 
 st.sidebar.markdown("---")
 st.sidebar.info("Larger radius = better coverage but more duplicates (auto-removed)")
