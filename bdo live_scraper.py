@@ -244,12 +244,14 @@ if "last_params" not in st.session_state:
 if "sources_scanned" not in st.session_state:
     st.session_state.sources_scanned = 0
 
-current_params = f"{region}_{search_query}"
+# Force a complete reset whenever Region OR Keyword changes
+current_params = f"{region}||{search_query.strip().lower()}"
 
 if st.session_state.last_params != current_params:
-    st.session_state.stored_places = []
+    st.session_state.stored_places = []          # clear everything
     st.session_state.sources_scanned = 0
     st.session_state.last_params = current_params
+    st.rerun()                                   # force immediate refresh
 
 # ====================== MAIN LOAD ======================
 if len(st.session_state.stored_places) == 0:
