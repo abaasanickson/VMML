@@ -88,6 +88,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # ====================== QUOTES & WELCOME ======================
 @st.cache_data(ttl=60)
 def get_live_quote():
@@ -100,6 +101,7 @@ def get_live_quote():
         pass
     return '"Dream big. Start small. Act now."'
 
+
 def get_greeting():
     eat_timezone = timezone(timedelta(hours=3))
     hour = datetime.now(eat_timezone).hour
@@ -111,6 +113,7 @@ def get_greeting():
         return "Good evening Alison"
     else:
         return "Hello Alison"
+
 
 quote = get_live_quote()
 greeting = get_greeting()
@@ -151,6 +154,7 @@ radius = st.sidebar.slider(
 st.sidebar.markdown("---")
 st.sidebar.info("Dynamic registry mapping active: Fetches real entities proportional to actual sector availability.")
 
+
 # ====================== TRUE ENTITY HARVESTER ENGINE ======================
 def fetch_high_volume_leads(region_name, query, volume_multiplier):
     """
@@ -161,10 +165,13 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
     records = []
 
     region_hubs = {
-        "Kampala": ["Nakasero Road", "Kampala Road", "Garden City", "Industrial Area", "Jinja Road", "Colville Street", "Luwum Street", "Wilson Road", "Bugolobi", "Ntinda"],
-        "Wakiso": ["Kasangati Town", "Kira Road", "Nansana Trading Centre", "Entebbe Road", "Kajjansi", "Matugga", "Kakungulu Zone", "Bulenga"],
+        "Kampala": ["Nakasero Road", "Kampala Road", "Garden City", "Industrial Area", "Jinja Road", "Colville Street",
+                    "Luwum Street", "Wilson Road", "Bugolobi", "Ntinda"],
+        "Wakiso": ["Kasangati Town", "Kira Road", "Nansana Trading Centre", "Entebbe Road", "Kajjansi", "Matugga",
+                   "Kakungulu Zone", "Bulenga"],
         "Mukono": ["Mukono Central", "Seeta Town", "Colville Street", "Namilyango Road", "Goma Division"],
-        "Western Uganda": ["High Street Mbarara", "Boma Fort Portal", "Kabale Road", "Bushenyi Town Centre", "Kasese Main Road"],
+        "Western Uganda": ["High Street Mbarara", "Boma Fort Portal", "Kabale Road", "Bushenyi Town Centre",
+                           "Kasese Main Road"],
         "Masaka": ["Nyendo", "Masaka Town Centre", "Buddu Street", "Kimanya", "Kyabakuza"],
         "Jinja": ["Main Street Jinja", "Amber Court", "Nile Crescent", "Mpumudde", "Walukuba"]
     }
@@ -173,7 +180,7 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
 
     sources_pool = [
         "URSB Official Registry", "KCCA Business Register", "Uganda Investment Authority (UIA)",
-        "Bank of Uganda Registry", "Yellow Pages Uganda", "FinderAfrica Directory", 
+        "Bank of Uganda Registry", "Yellow Pages Uganda", "FinderAfrica Directory",
         "HelloUganda Registry", "B2BMAP Uganda", "Business Info Directory"
     ]
 
@@ -188,7 +195,8 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
             ("Equity Bank Uganda", "Inclusive banking, mobile money integration, SME loans & savings"),
             ("KCB Bank Uganda", "Mortgage financing, corporate credit, forex trading & business accounts"),
             ("Housing Finance Bank", "Mortgage banking, construction loans, land acquisition & savings"),
-            ("Bank of Baroda Uganda", "Corporate lending, retail banking, international remittances & letters of credit"),
+            ("Bank of Baroda Uganda",
+             "Corporate lending, retail banking, international remittances & letters of credit"),
             ("Diamond Trust Bank (DTB)", "SME advisory, trade solutions, current accounts & fixed deposits"),
             ("NCBA Bank Uganda", "Asset finance, corporate solutions, digital lending & premium banking"),
             ("Tropical Bank", "Islamic banking products, commercial lending & retail services"),
@@ -206,7 +214,8 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
         ],
         "school": [
             ("Kampala Parents School", "Primary education, co-curricular training, ICT instruction & boarding"),
-            ("Aga Khan Primary & High School", "International curriculum, sports academy, science laboratories & library"),
+            ("Aga Khan Primary & High School",
+             "International curriculum, sports academy, science laboratories & library"),
             ("St. Mary's College Kisubi", "Secondary education, advanced sciences, leadership programs & sports"),
             ("Gayaza High School", "Girls' secondary education, agricultural sciences, computer training & boarding"),
             ("Ntinda View College", "Comprehensive secondary curriculum, moral instruction & vocational training"),
@@ -229,34 +238,40 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
 
     # Match sector or construct a structured dynamic pool if custom keyword is used
     matched_key = next((k for k in sector_entities if k in q_lower), None)
-    
+
     if matched_key:
         base_list = sector_entities[matched_key]
     else:
         # For custom keywords, build a natural inventory pool based on the keyword
         base_list = [
-            (f"Premier {query.capitalize()} Hub", f"Specialized retail, wholesale distribution & services for {query.capitalize()}"),
-            (f"Modern {query.capitalize()} Centre", f"Commercial supply, maintenance & customer support for {query.capitalize()}"),
-            (f"Apex {query.capitalize()} Solutions", f"Consultancy, direct sales & corporate contracting for {query.capitalize()}"),
-            (f"Global {query.capitalize()} Network", f"Regional distribution, retail agency & commercial services for {query.capitalize()}"),
-            (f"Standard {query.capitalize()} Enterprise", f"General trading, logistics & retail supply for {query.capitalize()}")
+            (f"Premier {query.capitalize()} Hub",
+             f"Specialized retail, wholesale distribution & services for {query.capitalize()}"),
+            (f"Modern {query.capitalize()} Centre",
+             f"Commercial supply, maintenance & customer support for {query.capitalize()}"),
+            (f"Apex {query.capitalize()} Solutions",
+             f"Consultancy, direct sales & corporate contracting for {query.capitalize()}"),
+            (f"Global {query.capitalize()} Network",
+             f"Regional distribution, retail agency & commercial services for {query.capitalize()}"),
+            (f"Standard {query.capitalize()} Enterprise",
+             f"General trading, logistics & retail supply for {query.capitalize()}")
         ]
 
     # Natural yield sizing: Give all available real unique entities if the pool is smaller than multiplier demand,
     # or scale up realistically up to the requested multiplier bounds.
     total_available = len(base_list)
-    effective_count = min(total_available * max(1, volume_multiplier // 2), total_available * 3) if matched_key else volume_multiplier * 10
+    effective_count = min(total_available * max(1, volume_multiplier // 2),
+                          total_available * 3) if matched_key else volume_multiplier * 10
 
     idx = 0
     for i in range(1, effective_count + 1):
         # Cycle or pull distinct entities
         entity_tuple = base_list[idx % total_available]
         org_name, deals_desc = entity_tuple
-        
+
         # If cycling through a real list multiple times across different zones, append a distinct branch label to prevent exact row duplicates
         zone_name = current_zones[i % len(current_zones)]
         source_name = sources_pool[i % len(sources_pool)]
-        
+
         if i > total_available:
             clean_name = f"{org_name} - {zone_name.split()[0]} Branch"
         else:
@@ -267,8 +282,8 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
             "Region": region_name,
             "Category": query.capitalize(),
             "Business Deals In": deals_desc,
-            "Phone Contact": f"+256 414 {random.randint(200,999)} {random.randint(100,999)}" if matched_key == "bank" else f"+256 7{random.randint(0,9)} {random.randint(100,999)} {random.randint(100,999)}",
-            "Website": f"https://www.{clean.lower().replace(' ', '').replace('&', 'and')}.co.ug",
+            "Phone Contact": f"+256 414 {random.randint(200, 999)} {random.randint(100, 999)}" if matched_key == "bank" else f"+256 7{random.randint(0, 9)} {random.randint(100, 999)} {random.randint(100, 999)}",
+            "Website": f"https://www.{clean_name.lower().replace(' ', '').replace('&', 'and')}.co.ug",
             "Physical Address": f"Plot {random.randint(1, 80)}, {zone_name}, {region_name}",
             "Rating": round(random.uniform(4.2, 4.9), 1),
             "Registry Source": source_name,
@@ -277,6 +292,7 @@ def fetch_high_volume_leads(region_name, query, volume_multiplier):
         idx += 1
 
     return records
+
 
 # ====================== SESSION STATE ======================
 if "stored_places" not in st.session_state:
@@ -316,7 +332,8 @@ if st.session_state.stored_places:
     st.subheader(f"Verified Directory Results for “{search_query}” in {region}")
 
     st.dataframe(
-        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Registry Source", "Rating"]],
+        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Registry Source",
+            "Rating"]],
         use_container_width=True,
         height=460
     )
