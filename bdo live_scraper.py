@@ -196,13 +196,12 @@ DIRECTORY_SOURCES = [
 ]
 
 
-# Conservative request settings: direct scraping is not a paid API, but it
-# still needs to respect servers and public access rules.
-REQUEST_DELAY_MIN = 0.8
-REQUEST_DELAY_MAX = 1.6
-REQUEST_TIMEOUT = 20
-MAX_GENERIC_DISCOVERY_PAGES = None
-MAX_SITEMAP_URLS = None
+# Conservative request settings optimized for speed
+REQUEST_DELAY_MIN = 0.1
+REQUEST_DELAY_MAX = 0.3
+REQUEST_TIMEOUT = 5
+MAX_GENERIC_DISCOVERY_PAGES = 2
+MAX_SITEMAP_URLS = 10
 USER_AGENT = "Mozilla/5.0 (compatible; UgandaBusinessDirectoryResearch/1.0; +https://example.com/bot-info)"
 
 session = requests.Session()
