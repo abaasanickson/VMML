@@ -203,16 +203,15 @@ def scrape_or_fetch_directories(region_name, query, multiplier):
     records = []
     seen = set()
     
-    # Target live open directory endpoints (e.g., public index pages)
+    # Target live open directory endpoints
     target_url = f"https://www.yellowpages-uganda.com/location/{region_name.lower()}"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     
-    scraped_successfully = False
     try:
         response = requests.get(target_url, headers=headers, timeout=4)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, "html.parser")
-            listings = soup.find_all("div", class_="listing-item") # Generic fallback tag parse
+            listings = soup.find_all("div", class_="listing-item")
             for item in listings:
                 title_elem = item.find("h3")
                 if title_elem:
@@ -229,13 +228,12 @@ def scrape_or_fetch_directories(region_name, query, multiplier):
                             "Rating": round(random.uniform(4.2, 4.9), 1),
                             "Registry Source": "Yellow Pages Uganda (Live Scrape)"
                         })
-                        scraped_successfully = True
     except:
         pass
 
-    # If live parsing hits an empty set or network block, pull strictly from the isolated region database
+    # Fallback to structured region-locked scaling matrix
     if not records:
-       hub_data = REGION_HUBS.get(region_name, REGION_HUBS["Kampala"])
+        hub_data = REGION_HUBS.get(region_name, REGION_HUBS["Kampala"])
         streets = hub_data["streets"]
         base_names = hub_data["names"]
         
@@ -265,6 +263,7 @@ def scrape_or_fetch_directories(region_name, query, multiplier):
                     "Registry Source": f"Uganda National Business Index ({region_name} Registry)"
                 })
             i += 1
+
     return records
 
 # ====================== SESSION STATE MANAGEMENT ======================
