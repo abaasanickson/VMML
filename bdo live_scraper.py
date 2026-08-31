@@ -1,295 +1,334 @@
 import time
 import random
+import re
+import json
+import hashlib
+from urllib.parse import quote_plus
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 import streamlit as st
 from datetime import datetime, timezone, timedelta
 
 # ====================== PAGE CONFIG ======================
-st.set_page_config(
-    page_title="VMML LIVE DIRECTORY HARVESTER",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Uganda Heavy-Duty Business Scraper", layout="wide")
 
-# ====================== CUSTOM CSS ======================
 st.markdown("""
 <style>
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #e2e8f0;
+        background: linear-gradient(135deg, #090d16 0%, #111827 100%);
+        color: #f3f4f6;
     }
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        border-right: 1px solid #334155;
+        background: linear-gradient(180deg, #111827 0%, #090d16 100%);
+        border-right: 1px solid #1f2937;
     }
-    h1, h2, h3 {
-        color: #f8fafc !important;
-    }
-    div[data-testid="stMetric"] {
-        background: rgba(30, 41, 59, 0.7);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 16px;
-    }
-    div[data-testid="stMetric"] label {
-        color: #94a3b8 !important;
-    }
-    div[data-testid="stMetric"] div {
-        color: #38bdf8 !important;
-        font-weight: 600;
-    }
+    h1, h2, h3 { color: #ffffff !important; }
     .stButton > button {
-        background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+        background: linear-gradient(180deg, #2563eb, #1d4ed8);
         color: white;
         border: none;
-        border-radius: 10px;
-        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
         font-weight: 700;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-    }
-    .stDownloadButton > button {
-        background: linear-gradient(180deg, #059669, #047857);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.6rem 1.4rem;
-        font-weight: 700;
-    }
-    .welcome-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
-        border: 1px solid #334155;
-        border-radius: 16px;
-        padding: 24px 28px;
-        margin-bottom: 24px;
-    }
-    .welcome-title {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: #f8fafc;
-        margin-bottom: 6px;
-    }
-    .welcome-subtitle {
-        color: #94a3b8;
-        font-size: 1rem;
-        margin-bottom: 14px;
-    }
-    .quote {
-        font-style: italic;
-        color: #cbd5e1;
-        border-left: 4px solid #3b82f6;
-        padding-left: 16px;
-        margin-top: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ====================== QUOTES & GREETING ======================
-@st.cache_data(ttl=60)
-def get_live_quote():
-    try:
-        response = requests.get("https://zenquotes.io/api/random", timeout=3)
-        if response.status_code == 200:
-            data = response.json()
-            return f'"{data[0]["q"]}" — {data[0]["a"]}'
-    except:
-        pass
-    return '"Execution is everything."'
+st.title("Uganda Heavy-Duty Multi-Sector Business Harvester")
+st.caption("Zero-API-Cost • High-Density Matrix Scanning • OpenStreetMap + Directory + Frontend Maps Grid")
 
-def get_greeting():
-    eat_timezone = timezone(timedelta(hours=3))
-    hour = datetime.now(eat_timezone).hour
-    if 5 <= hour < 12:
-        return "Good morning Alison"
-    elif 12 <= hour < 17:
-        return "Good afternoon Alison"
-    elif 17 <= hour < 22:
-        return "Good evening Alison"
-    else:
-        return "Hello Alison"
-
-st.markdown(f"""
-<div class="welcome-card">
-    <div class="welcome-title">{get_greeting()}</div>
-    <div class="welcome-subtitle">Strict Sector & Region-Locked Commercial Directory Harvester</div>
-    <div class="quote">{get_live_quote()}</div>
-</div>
-""", unsafe_allow_html=True)
-
-st.title("Verified Regional Business Harvester")
-st.caption("Live Directory Scraper Engine • Strict Geographic Isolation • Zero Cross-Town Errors")
-
-# ====================== SIDEBAR ======================
-st.sidebar.markdown("### ⚙️ Search Configuration")
-
-region = st.sidebar.selectbox(
-    "Select Region",
-    ["Kampala", "Wakiso", "Mukono", "Jinja", "Mbarara", "Gulu", "Mbale", "Arua", "Masaka", "Fort Portal"]
-)
-
-search_query = st.sidebar.text_input(
-    "Business Sector / Keyword",
-    value="Hardware",
-    help="Enter any sector: Hardware, Pharmacy, School, Supermarket, Bank, Garage, Boutique..."
-)
-
-volume_multiplier = st.sidebar.slider(
-    "Directory Volume Factor",
-    min_value=1,
-    max_value=10,
-    value=6,
-    step=1
-)
-
-st.sidebar.markdown("---")
-st.sidebar.info("Engine ensures strict geographic boundaries so regions like Jinja only pull localized entities without mixing up Kampala hubs.")
-
-# ====================== STRICT REGIONAL DATA DICTIONARY ======================
-# Isolated hub mapping prevents cross-contamination (e.g., Nakasero stays strictly in Kampala)
-REGION_HUBS = {
-    "Kampala": {
-        "streets": ["Nakasero Road", "Luwum Street", "Jinja Road", "Entebbe Road", "Wilson Road", "Industrial Area", "Ntinda Road", "Bugolobi", "Kireka", "Kalerwe"],
-        "names": ["Nakasero Hardware & Tools", "Pearl City Supplies", "Nile Commercial Emporium", "Kampala Central Trading", "Standard Hardware Depot", "Global Engineering Solutions"]
-    },
-    "Wakiso": {
-        "streets": ["Kasangati Town Centre", "Namugongo Road", "Kajjansi Trading Centre", "Matugga Highway", "Nansana Junction", "Kira Town", "Bulenga Stage"],
-        "names": ["Kasangati General Hardware", "Wakiso District Builders", "Namugongo Prime Supplies", "Kajjansi Hardware Centre", "Matugga Modern Enterprises"]
-    },
-    "Mukono": {
-        "streets": ["Mukono Central Market", "Colville Street", "Seeta Town Road", "Goma Division", "Namilyango Road"],
-        "Names": ["Mukono Rural Builders Hub", "Seeta Commercial Hardware", "Colville General Supplies", "Goma Star Enterprises"]
-    },
-    "Jinja": {
-        "streets": ["Main Street Jinja", "Amber Court", "Nile Crescent", "Mpumudde Zone", "Walukuba Road", "Kimaka Road"],
-        "names": ["Jinja Nile Hardware Ltd", "Amber Court Builders", "Source of Nile Supplies", "Main Street General Hardware", "Busoga Trade Emporium"]
-    },
-    "Mbarara": {
-        "streets": ["High Street Mbarara", "Koranorya", "Kakoba Road", "Boma Mbarara", "Nkokonjeru Stage"],
-        "names": ["Ankole Hardware & Tools", "Mbarara Classic Supplies", "High Street Builders Hub", "Koranorya Commercial Ltd"]
-    },
-    "Gulu": {
-        "streets": ["Main Street Gulu", "Commercial Road", "Pece Division", "Bardege Zone", "Layibi Road"],
-        "names": ["Northern Uganda Hardware", "Gulu Regional Supplies", "Commercial Road Depot", "Pece Builders Emporium"]
-    },
-    "Mbale": {
-        "streets": ["Republic Street", "Nkokonjeru Terrace", "Clock Tower Mbale", "Milimani Zone"],
-        "names": ["Elgon Hardware & Solutions", "Mbale Central Suppliers", "Republic Street Trading", "Milimani Builders Hub"]
-    },
-    "Arua": {
-        "streets": ["Packwach Road", "Arua Hill", "Commercial Street", "Adumi Road"],
-        "names": ["West Nile Hardware Ltd", "Arua Town Builders", "Commercial Street Depot", "Arua Hill Supplies"]
-    },
-    "Masaka": {
-        "streets": ["Nyendo Junction", "Masaka Town Centre", "Kitubulu Road", "Buddu Street"],
-        "names": ["Buddu Hardware Emporium", "Masaka Central Suppliers", "Nyendo Builders Hub", "Kimanya Commercial Ltd"]
-    },
-    "Fort Portal": {
-        "streets": ["Boma Fort Portal", "Mpanga Market Lane", "Kamwenge Road", "Rwengoma"],
-        "names": ["Tooro Hardware & General", "Fort Portal Builders Depot", "Mpanga Commercial Hub", "Rwengoma Supplies Ltd"]
-    }
+# ====================== SECTOR MATRIX EXPANSION ======================
+# Automatically expands a broad sector keyword into granular sub-categories
+SECTOR_EXPANSIONS = {
+    "hardware": ["hardware", "cement shop", "building materials", "plumbing supplies", "electrical shop", "steel fabrication", "tools supplier", "timber yard", "paints distributor"],
+    "pharmacy": ["pharmacy", "drug shop", "medical clinic", "medical laboratory", "hospital", "dental clinic", "veterinary drug shop", "healthcare center"],
+    "supermarket": ["supermarket", "grocery store", "mini market", "wholesale shop", "provision store", "general merchandise", "hypermarket"],
+    "school": ["primary school", "secondary school", "nursery school", "kindergarten", "vocational institution", "training center", "coaching college"],
+    "restaurant": ["restaurant", "cafe", "hotel", "fast food", "bar and grill", "local food joint", "caterers", "bakery"],
+    "automotive": ["spare parts", "auto garage", "car dealer", "mechanic", "tyre center", "car wash", "fuel station", "motorcycle spare parts"]
 }
 
-# ====================== HARVESTER LOGIC ======================
-def scrape_or_fetch_directories(region_name, query, multiplier):
-    """
-    Generates a fully diverse, high-volume list of unique business records 
-    without repetitive fallback loops.
-    """
-    q_clean = query.strip().title()
+# Detailed regional bounding boxes for deep OpenStreetMap grid queries
+REGION_BOXES = {
+    "Kampala": [
+        {"name": "Central Kampala", "box": "(0.30, 32.55, 0.33, 32.59)"},
+        {"name": "Nakawa & Ntinda", "box": "(0.33, 32.58, 0.38, 32.65)"},
+        {"name": "Kawempe & Bwaise", "box": "(0.35, 32.53, 0.42, 32.58)"},
+        {"name": "Rubaga & Nateete", "box": "(0.28, 32.50, 0.32, 32.55)"},
+        {"name": "Makindye & Ggaba", "box": "(0.25, 32.55, 0.30, 32.62)"}
+    ],
+    "Wakiso": [
+        {"name": "Kira & Namugongo", "box": "(0.35, 32.60, 0.42, 32.70)"},
+        {"name": "Nansana & Nabweru", "box": "(0.35, 32.50, 0.40, 32.55)"},
+        {"name": "Entebbe Corridor", "box": "(0.05, 32.45, 0.25, 32.55)"},
+        {"name": "Kajjansi & Katabi", "box": "(0.15, 32.50, 0.22, 32.58)"}
+    ],
+    "Mukono": [
+        {"name": "Mukono Central & Seeta", "box": "(0.30, 32.70, 0.40, 32.80)"}
+    ],
+    "Jinja": [
+        {"name": "Jinja Municipality", "box": "(0.40, 33.18, 0.47, 33.25)"}
+    ],
+    "Mbarara": [
+        {"name": "Mbarara City", "box": "(-0.62, 30.63, -0.58, 30.68)"}
+    ]
+}
+
+# ====================== SIDEBAR CONFIG ======================
+st.sidebar.markdown("### ⚙️ Production Scraper Controls")
+
+region = st.sidebar.selectbox("Select Region / Hub", list(REGION_BOXES.keys()))
+selected_sector = st.sidebar.selectbox("Select Business Sector", list(SECTOR_EXPANSIONS.keys()))
+
+custom_keyword_override = st.sidebar.text_input("Or Custom Search Query", value="", help="Overrides sector matrix if filled.")
+
+st.sidebar.markdown("---")
+deep_scan_maps = st.sidebar.checkbox("Enable Deep Google Maps Scroll (Playwright)", value=False, help="Runs headless browser automation to scroll and pull maximum listings. Requires playwright installed.")
+max_scrolls = st.sidebar.slider("Maps Scroll Depth (Pages)", 1, 10, 3, help="Higher value = more businesses harvested from Google Maps frontend.")
+
+# ====================== CORE UTILS ======================
+def clean_text(val):
+    if not val:
+        return "N/A"
+    return re.sub(r"\s+", " ", str(val)).strip()
+
+def make_id(source, name, address=""):
+    raw = f"{source}|{clean_text(name).lower()}|{clean_text(address).lower()}"
+    return "prod_" + hashlib.sha1(raw.encode("utf-8", errors="ignore")).hexdigest()[:24]
+
+# ====================== ENGINE 1: OVERPASS GRID HARVESTER ======================
+def harvest_openstreetmap_grid(region_name, keywords):
+    sub_grids = REGION_BOXES.get(region_name, [{"name": region_name, "box": "(0.25, 32.50, 0.45, 32.70)"}])
+    overpass_url = "https://overpass-api.de/api/interpreter"
+    all_records = []
+    
+    session = requests.Session()
+    session.headers.update({"User-Agent": "UgandaProductionScraper/2.0"})
+
+    for grid in sub_grids:
+        bbox = grid["box"]
+        for kw in keywords:
+            query = f"""
+            [out:json][timeout:30];
+            (
+              node["name"~"{kw}", i]{bbox};
+              way["name"~"{kw}", i]{bbox};
+            );
+            out body;
+            >;
+            out skel qt;
+            """
+            try:
+                response = session.post(overpass_url, data={"data": query}, timeout=35)
+                if response.status_code == 200:
+                    data = response.json()
+                    for el in data.get("elements", []):
+                        tags = el.get("tags", {})
+                        name = tags.get("name")
+                        if not name:
+                            continue
+                        
+                        address = ", ".join(filter(None, [tags.get("addr:street"), grid["name"], region_name]))
+                        phone = tags.get("phone", tags.get("contact:phone", "N/A"))
+                        website = tags.get("website", tags.get("contact:website", "N/A"))
+                        category = tags.get("shop", tags.get("amenity", tags.get("office", kw)))
+
+                        all_records.append({
+                            "Company Name": clean_text(name),
+                            "Region": region_name,
+                            "Sub-Zone": grid["name"],
+                            "Sector Category": clean_text(category).capitalize(),
+                            "Matched Keyword": kw,
+                            "Phone Contact": clean_text(phone),
+                            "Website": clean_text(website),
+                            "Physical Address": clean_text(address),
+                            "Place ID": make_id("OSM-Grid", name, address),
+                            "Lat": str(el.get("lat", "N/A")),
+                            "Lng": str(el.get("lon", "N/A")),
+                            "Data Source": "OpenStreetMap High-Density Grid"
+                        })
+                time.sleep(1.0) # Polite pacing to prevent server block
+            except Exception:
+                continue
+    return all_records
+
+# ====================== ENGINE 2: DIRECTORY MATRIX SCRAPER ======================
+def harvest_directories(region_name, keywords):
     records = []
-    seen = set()
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     
-    hub_data = REGION_HUBS.get(region_name, REGION_HUBS["Kampala"])
-    streets = hub_data["streets"]
-    base_names = hub_data["names"]
-    
-    # Expanded variation pools to guarantee zero repetition
-    corporate_suffixes = ["Enterprises Ltd", "General Agencies", "Hardware & Suppliers", "Distributors & Co.", "Investment Group", "Solutions & Holdings", "Commercial Ventures", "Wholesale Emporium", "Trading Partners", "Builders Depot"]
-    prefix_brands = ["City Star", "Standard", "Mega", "Alpha & Omega", "Prime", "Global", "Everest", "Victoria", "Nile", "Pearl", "Top Notch", "Horizon", "Interstate", "Dynamic", "Summit"]
-
-    target_count = multiplier * 50
-    i = 0
-    while len(records) < target_count and i < target_count * 5:
-        street = streets[i % len(streets)]
-        brand = prefix_brands[(i * 7) % len(prefix_brands)]
-        suffix = corporate_suffixes[(i * 3) % len(corporate_suffixes)]
+    # Target high-yield public directory search routes
+    for kw in keywords:
+        search_urls = [
+            f"https://www.yellowpages-uganda.com/search?q={quote_plus(kw)}",
+            f"https://www.businesslist.co.ug/search?q={quote_plus(kw)}",
+            f"https://finderafrica.com/?s={quote_plus(kw)}"
+        ]
         
-        # Construct completely distinct names using rotating components
-        if i % 3 == 0:
-            name = f"{brand} {q_clean} {suffix}"
-        elif i % 3 == 1:
-            name = f"{street.split()[0]} {q_clean} {suffix}"
-        else:
-            name = f"{base_names[i % len(base_names)].split()[0]} {brand} {q_clean} Ltd"
-            
-        if name not in seen:
-            seen.add(name)
-            records.append({
-                "Company Name": name,
-                "Region": region_name,
-                "Category": q_clean,
-                "Business Deals In": f"Wholesale distribution, retail supply, and direct contracting services for {query.lower()}.",
-                "Phone Contact": f"+256 7{random.randint(0,9)} {random.randint(100,999)} {random.randint(100,999)}",
-                "Physical Address": f"Plot {random.randint(1, 180)}, {street}, {region_name}",
-                "Rating": round(random.uniform(4.0, 5.0), 1),
-                "Registry Source": f"Uganda National Business Index ({region_name} Registry)"
-            })
-        i += 1
-
+        for url in search_urls:
+            try:
+                res = session.get(url, timeout=12)
+                if res.status_code == 200:
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(res.text, "html.parser")
+                    for heading in soup.find_all(["h2", "h3", "h4", "a"]):
+                        name = clean_text(heading.get_text("D", strip=True))
+                        if len(name) < 3 or len(name) > 120 or name.lower() in {"home", "login", "search"}:
+                            continue
+                        parent = heading.parent
+                        block = clean_text(parent.get_text(" ", strip=True)) if parent else name
+                        
+                        phones = re.findall(r"(?:\+?256|0)[\d\s().\-/]{7,}", block)
+                        phone = phones[0] if phones else "N/A"
+                        
+                        records.append({
+                            "Company Name": name,
+                            "Region": region_name,
+                            "Sub-Zone": region_name,
+                            "Sector Category": kw.capitalize(),
+                            "Matched Keyword": kw,
+                            "Phone Contact": clean_text(phone),
+                            "Website": "N/A",
+                            "Physical Address": region_name,
+                            "Place ID": make_id("Directory-Matrix", name),
+                            "Lat": "N/A",
+                            "Lng": "N/A",
+                            "Data Source": "Public Directory Matrix"
+                        })
+                time.sleep(0.8)
+            except Exception:
+                continue
     return records
 
-# ====================== SESSION STATE MANAGEMENT ======================
-if "directory_data" not in st.session_state:
-    st.session_state.directory_data = []
-if "prev_config" not in st.session_state:
-    st.session_state.prev_config = ""
+# ====================== ENGINE 3: PLAYWRIGHT INFINITE-SCROLL MAPS ======================
+def harvest_frontend_maps_infinite(region_name, keywords, scroll_depth):
+    records = []
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+            page = browser.new_page()
+            
+            for kw in keywords:
+                query_str = f"{kw} in {region_name}, Uganda"
+                search_url = f"https://www.google.com/maps/search/{quote_plus(query_str)}"
+                try:
+                    page.goto(search_url, timeout=35000)
+                    page.wait_for_timeout(3000)
+                    
+                    # Target the scrollable container sidebar for infinite scrolling
+                    sidebar_selector = 'div[role="feed"]'
+                    try:
+                        page.wait_for_selector(sidebar_selector, timeout=8000)
+                        for _ in range(scroll_depth):
+                            page.evaluate(f"""
+                                const elem = document.querySelector('{sidebar_selector}');
+                                if(elem) {{ elem.scrollTop = elem.scrollHeight; }}
+                            """)
+                            page.wait_for_timeout(2500)
+                    except Exception:
+                        pass # Fallback if specific feed structure varies
+                    
+                    # Extract listing elements
+                    listings = page.locator('div.Nv2PK').all()
+                    for item in listings:
+                        try:
+                            text_block = item.inner_text().split("\n")
+                            name = text_block[0] if len(text_block) > 0 else "N/A"
+                            full_text = " ".join(text_block)
+                            
+                            phones = re.findall(r"(?:\+?256|0)[\d\s().\-/]{7,}", full_text)
+                            phone = phones[0] if phones else "N/A"
+                            
+                            records.append({
+                                "Company Name": clean_text(name),
+                                "Region": region_name,
+                                "Sub-Zone": region_name,
+                                "Sector Category": kw.capitalize(),
+                                "Matched Keyword": kw,
+                                "Phone Contact": clean_text(phone),
+                                "Website": "N/A",
+                                "Physical Address": region_name,
+                                "Place ID": make_id("Maps-Infinite", name),
+                                "Lat": "N/A",
+                                "Lng": "N/A",
+                                "Data Source": "Google Maps Frontend Infinite Scroll"
+                            })
+                        except Exception:
+                            continue
+                except Exception:
+                    continue
+            browser.close()
+    except Exception:
+        pass
+    return records
 
-current_config = f"{region}_{search_query}_{volume_multiplier}"
+# ====================== STATE & EXECUTION CONTROLLER ======================
+if "production_leads" not in st.session_state:
+    st.session_state.production_leads = []
+if "exec_fingerprint" not in st.session_state:
+    st.session_state.exec_fingerprint = ""
 
-if st.session_state.prev_config != current_config:
-    st.session_state.directory_data = []
-    st.session_state.prev_config = current_config
+active_keywords = [custom_keyword_override.strip()] if custom_keyword_override.strip() else SECTOR_EXPANSIONS.get(selected_sector, [selected_sector])
+current_fingerprint = hashlib.sha256(f"{region}|{selected_sector}|{custom_keyword_override}|{deep_scan_maps}".encode()).hexdigest()
 
-if not st.session_state.directory_data:
-    with st.spinner(f"Extracting directory records for '{search_query}' in {region}..."):
-        time.sleep(0.3)
-        st.session_state.directory_data = scrape_or_fetch_directories(region, search_query, volume_multiplier)
+if st.session_state.exec_fingerprint != current_fingerprint:
+    st.session_state.production_leads = []
+    st.session_state.exec_fingerprint = current_fingerprint
 
-# ====================== RENDER DASHBOARD ======================
-if st.session_state.directory_data:
-    df = pd.DataFrame(st.session_state.directory_data)
-    df = df.drop_duplicates(subset=["Company Name"]).reset_index(drop=True)
-    df.insert(0, "No.", range(1, len(df) + 1))
+st.subheader(f"Target Matrix: {selected_sector.upper()} across {region}")
+st.write(f"**Expanded Sub-Queries Matrix:** `{', '.join(active_keywords)}`")
 
+if st.button("🚀 Launch Heavy-Duty Harvester Job", use_container_width=True):
+    with st.spinner("Executing multi-threaded sector sweep across micro-grids and directories..."):
+        master_list = []
+        
+        # 1. OpenStreetMap Grid Harvester
+        osm_data = harvest_openstreetmap_grid(region, active_keywords)
+        master_list.extend(osm_data)
+        
+        # 2. Directory Matrix Harvester
+        dir_data = harvest_directories(region, active_keywords)
+        master_list.extend(dir_data)
+        
+        # 3. Google Maps Infinite Scroll (Optional)
+        if deep_scan_maps:
+            maps_data = harvest_frontend_maps_infinite(region, active_keywords, max_scrolls)
+            master_list.extend(maps_data)
+            
+        # Deduplication and processing
+        if master_list:
+            df_res = pd.DataFrame(master_list)
+            df_res = df_res.drop_duplicates(subset=["Place ID"])
+            st.session_state.production_leads = df_res.to_dict("records")
+        else:
+            st.session_state.production_leads = []
+
+if st.session_state.production_leads:
+    df_final = pd.DataFrame(st.session_state.production_leads)
+    df_final.insert(0, "No.", range(1, len(df_final) + 1))
+    
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Active Records", len(df))
-    c2.metric("Selected Region", region)
-    c3.metric("Target Sector", search_query.capitalize())
-    c4.metric("Data Engine", "Region-Locked Index")
+    c1.metric("Total Unique Records", len(df_final))
+    c2.metric("Target Region", region)
+    c3.metric("Sector Matrix", selected_sector.capitalize())
+    c4.metric("Sub-Queries Used", len(active_keywords))
 
     st.markdown("---")
-    st.subheader(f"Directory Results: {search_query.capitalize()} in {region}")
-
     st.dataframe(
-        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Registry Source", "Rating"]],
+        df_final[["No.", "Company Name", "Sector Category", "Matched Keyword", "Phone Contact", "Physical Address", "Sub-Zone", "Data Source"]],
         use_container_width=True,
-        height=450
+        height=500
     )
 
-    st.success(f"✅ Successfully loaded {len(df)} verified entries for '{search_query}' locked exclusively to {region}.")
-
     st.markdown("---")
-    csv_data = df.to_csv(index=False).encode("utf-8")
+    csv_data = df_final.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Export Filtered Directory to CSV",
+        label="📥 Download Full Sector Production Database (CSV)",
         data=csv_data,
-        file_name=f"{region}_{search_query}_directory.csv",
-        mime="text/csv",
+        file_name=f"Uganda_{region}_{selected_sector}_production_leads.csv",
+        mime="text/css" if False else "text/csv",
         use_container_width=True
     )
 else:
-    st.warning("No listings discovered for this search parameter. Adjust your keyword or region.")
+    st.info("Click the button above to start the heavy-duty sector sweep. This will loop through multiple sub-categories and sub-zones automatically.")
