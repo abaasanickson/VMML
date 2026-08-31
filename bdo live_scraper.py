@@ -732,99 +732,49 @@ if "source_status" not in st.session_state:
 if "source_errors" not in st.session_state:
     st.session_state.source_errors = {}
 
-# ====================== MAIN LOGIC ======================
-normalized_region = clean_text(region).lower()
-normalized_keyword = clean_text(search_query).lower()
-current_search_fingerprint = hashlib.sha256(
-    f"{normalized_region}|{normalized_keyword}".encode("utf-8")
-).hexdigest()
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# NEW SEARCH = NEW DATASET. Nothing from the previous region/keyword search is
-# allowed to survive into the new table.
-if st.session_state.last_search_fingerprint != current_search_fingerprint:
-    st.session_state.stored_places = []
-    st.session_state.source_status = {}
-    st.session_state.source_errors = {}
-    st.session_state.last_search_fingerprint = current_search_fingerprint
+# ====================== OPTIMIZED COLLECTION PIPELINE ======================
+
+def process_single_source(source, region, search_query):
+    """Worker function to scrape a single source safely within a thread pool."""
+    source_name = source["name"]
+    try:
+        records = collect_from_source(source, region, search_query)
+        records = [r for r in records if query_match(r, search_query, region)]
+        return source_name, records, None
+    except Exception as exc:
+        return source_name, [], str(exc)[:200]
 
 if not search_query.strip():
     st.warning("Enter a business keyword to start the directory search.")
 else:
     if not st.session_state.stored_places:
-        with st.spinner(f"Searching all configured Uganda directories & registries for '{search_query}' in {region}..."):
+        with st.spinner(f"⚡ Concurrently scanning Uganda directories & registries for '{search_query}' in {region}..."):
             all_records = []
+            source_status = {}
+            source_errors = {}
 
-            for source in DIRECTORY_SOURCES:
-                source_name = source["name"]
-                try:
-                    records = collect_from_source(source, region, search_query)
-                    # Defensive validation: a source may not return records that
-                    # actually match the current query/region. Never rewrite an
-                    # old record to make it appear to match.
-                    records = [
-                        r for r in records
-                        if query_match(r, search_query, region)
-                    ]
-                    st.session_state.source_status[source_name] = len(records)
+            # Use ThreadPoolExecutor to scrape multiple directories simultaneously
+            max_workers = min(8, len(DIRECTORY_SOURCES)) # Adjust worker count to balance speed and server load
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_source = {
+                    executor.submit(process_single_source, source, region, search_query): source 
+                    for source in DIRECTORY_SOURCES
+                }
+                
+                for future in as_completed(future_to_source):
+                    source_name, records, error = future.result()
+                    source_status[source_name] = len(records)
+                    if error:
+                        source_errors[source_name] = error
                     all_records.extend(records)
-                except Exception as exc:
-                    st.session_state.source_status[source_name] = 0
-                    st.session_state.source_errors[source_name] = str(exc)[:200]
+
+            st.session_state.source_status = source_status
+            st.session_state.source_errors = source_errors
 
             df_temp = normalize_and_dedupe(all_records)
             if not df_temp.empty:
-                # Store only records belonging to THIS fingerprint.
                 df_temp["Search Fingerprint"] = current_search_fingerprint
                 st.session_state.stored_places = df_temp.to_dict("records")
-
-    if st.session_state.stored_places:
-        df = normalize_and_dedupe(st.session_state.stored_places)
-
-        # Final guard against stale/cross-search records.
-        if "Search Fingerprint" in st.session_state.stored_places[0]:
-            df = df[df["Search Fingerprint"] == current_search_fingerprint].copy()
-        df.insert(0, "No.", range(1, len(df) + 1))
-
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total Unique Places", len(df))
-        m2.metric("Region", region)
-        m3.metric("Keyword", search_query.capitalize())
-        m4.metric("Sources Scanned", f"{len(DIRECTORY_SOURCES)} / {len(DIRECTORY_SOURCES)}")
-
-        st.markdown("---")
-        st.subheader(f"Results for “{search_query}” in {region}")
-
-        display_columns = [
-            "No.", "Company Name", "Business Deals In", "Phone Contact",
-            "Physical Address", "Rating", "Website", "Data Source", "Source URL"
-        ]
-        display_columns = [c for c in display_columns if c in df.columns]
-
-        st.dataframe(
-            df[display_columns],
-            use_container_width=True,
-            height=460
-        )
-
-        st.markdown("---")
-        st.caption("Source coverage")
-        status_df = pd.DataFrame([
-            {"Data Source": name, "Records Found": count, "Status": "OK" if count else "No matching public records"}
-            for name, count in st.session_state.source_status.items()
-        ])
-        if not status_df.empty:
-            st.dataframe(status_df, use_container_width=True, height=300)
-
-        st.success("✅ Search completed. Results belong only to the current region + business keyword. No records are fabricated or renamed from a previous search.")
-
-        st.markdown("---")
-        csv = df.drop(columns=["Search Fingerprint"], errors="ignore").to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="📥 Export All Leads to CSV",
-            data=csv,
-            file_name=f"{region}_{search_query}_leads.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
-    else:
-        st.warning("No public directory records were found for this keyword/region. Try a broader keyword or another region.")
