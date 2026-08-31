@@ -69,19 +69,19 @@ st.markdown("""
         margin-bottom: 24px;
     }
     .welcome-title {
-        font-size: 1.6rem;38bdf8
+        font-size: 1.6rem;
         font-weight: 700;
-        color: #291C0E;
+        color: #f8fafc;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
-        color: #6E473B;
+        color: #94a3b8;
         font-size: 1rem;
         margin-bottom: 14px;
     }
     .quote {
         font-style: italic;
-        color: #A78D78;
+        color: #cbd5e1;
         border-left: 4px solid #3b82f6;
         padding-left: 16px;
         margin-top: 12px;
@@ -89,9 +89,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ====================== NO PAID/API BUSINESS SEARCH ======================
-# Google Maps / Places business search has been removed.
-# Business leads are collected from public Uganda directories and registries.
 
 # ====================== QUOTES & WELCOME ======================
 @st.cache_data(ttl=60)
@@ -125,7 +122,7 @@ greeting = get_greeting()
 
 st.markdown(f"""
 <div class="welcome-card">
-    <div class="welcome-title">{greeting} Ready to generate leads?</div>
+    <div class="welcome-title">{greeting}. Ready to generate leads?</div>
     <div class="welcome-subtitle">Full coverage across Kampala, Wakiso, Mukono & Regional Directories</div>
     <div class="quote">{quote}</div>
 </div>
@@ -149,19 +146,20 @@ search_query = st.sidebar.text_input(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.info("Direct public-directory mode active. Every new region/keyword combination starts a fresh search across the configured sources.")
+st.sidebar.info("Direct public-directory mode active with parallel multi-threading.")
 
 # ====================== UGANDA SOURCE REGISTRY ======================
-# Verified source catalog. Each source is searched independently and the
-# returned records are normalized into the same table. We do not fabricate
-# records when a source is empty or inaccessible.
 DIRECTORY_SOURCES = [
-    {"name": "URSB Official Registry", "url": "https://eregistry.ursb.go.ug/search", "mode": "generic", "search_patterns": ["https://eregistry.ursb.go.ug/search?q={query}"]},
+    {"name": "URSB Official Registry", "url": "https://eregistry.ursb.go.ug/search", "mode": "generic",
+     "search_patterns": ["https://eregistry.ursb.go.ug/search?q={query}"]},
     {"name": "KCCA Licensed Businesses", "url": "https://www.kcca.go.ug/businesses", "mode": "kcca"},
-    {"name": "Uganda Investment Authority", "url": "https://ugandainvest.go.ug/", "mode": "generic", "search_patterns": ["https://ugandainvest.go.ug/?s={query}"]},
-    {"name": "National NGO Bureau", "url": "https://www.ngobureau.go.ug/en/updated-national-ngo-register", "mode": "generic"},
+    {"name": "Uganda Investment Authority", "url": "https://ugandainvest.go.ug/", "mode": "generic",
+     "search_patterns": ["https://ugandainvest.go.ug/?s={query}"]},
+    {"name": "National NGO Bureau", "url": "https://www.ngobureau.go.ug/en/updated-national-ngo-register",
+     "mode": "generic"},
     {"name": "Yellow Pages Uganda", "url": "https://www.yellowpages-uganda.com/", "mode": "yellowpages"},
-    {"name": "FinderAfrica Uganda", "url": "https://finderafrica.com/location/business-directory-uganda/", "mode": "finderafrica"},
+    {"name": "FinderAfrica Uganda", "url": "https://finderafrica.com/location/business-directory-uganda/",
+     "mode": "finderafrica"},
     {"name": "HelloUganda", "url": "https://www.hellouganda.com/", "mode": "generic"},
     {"name": "B2BMAP Uganda", "url": "https://www.b2bmap.com/uganda", "mode": "generic"},
     {"name": "Uganda Manufacturers Association", "url": "https://uma.or.ug/", "mode": "uma"},
@@ -172,32 +170,36 @@ DIRECTORY_SOURCES = [
     {"name": "BusinessList Uganda", "url": "https://www.businesslist.co.ug/", "mode": "generic"},
     {"name": "InfoGuide Uganda", "url": "https://www.infoguideuganda.com/", "mode": "generic"},
     {"name": "Africa2Trust", "url": "https://africa2trust.com/", "mode": "generic"},
-    {"name": "Yellow Uganda", "url": "https://www.yellow.ug/", "mode": "yellow_ug", "search_patterns": ["https://www.yellow.ug/search?query={query}"]},
+    {"name": "Yellow Uganda", "url": "https://www.yellow.ug/", "mode": "yellow_ug",
+     "search_patterns": ["https://www.yellow.ug/search?query={query}"]},
     {"name": "Yellow Pages Uganda (co.ug)", "url": "https://www.yellowpages.co.ug/", "mode": "generic"},
     {"name": "Afrikta Uganda", "url": "https://afrikta.com/listing-locations/uganda/", "mode": "generic"},
     {"name": "Sokoni Links Uganda", "url": "https://www.sokoni-links.com/", "mode": "generic"},
-    {"name": "East Africa Tenders Uganda Business Directory", "url": "https://eastafricatenders.com/businesses/", "mode": "generic"},
-    {"name": "Uganda Cargo Consolidators Association Members", "url": "https://ucca.org.ug/members-directory/", "mode": "generic"},
+    {"name": "East Africa Tenders Uganda Business Directory", "url": "https://eastafricatenders.com/businesses/",
+     "mode": "generic"},
+    {"name": "Uganda Cargo Consolidators Association Members", "url": "https://ucca.org.ug/members-directory/",
+     "mode": "generic"},
     {"name": "FIATA Uganda Members Directory", "url": "https://fiata.org/directory/ug/", "mode": "generic"},
-    {"name": "Uganda Tourism Board Licensed Accommodation", "url": "https://utb.go.ug/licensed-facilities/", "mode": "table"},
-    {"name": "National Drug Authority Licensed Outlets", "url": "https://www.nda.or.ug/licensed-outlets/", "mode": "table"},
+    {"name": "Uganda Tourism Board Licensed Accommodation", "url": "https://utb.go.ug/licensed-facilities/",
+     "mode": "table"},
+    {"name": "National Drug Authority Licensed Outlets", "url": "https://www.nda.or.ug/licensed-outlets/",
+     "mode": "table"},
     {"name": "Bank of Uganda Supervised Institutions", "url": "https://bou.or.ug/supervision", "mode": "table"},
     {"name": "Insurance Regulatory Authority Licensed Insurers", "url": "https://ira.go.ug/", "mode": "generic"},
-    {"name": "Electricity Regulatory Authority Certified Installers", "url": "https://www.era.go.ug/certified-installation-permit-holders/", "mode": "table"},
-    {"name": "Uganda National Bureau of Standards Certified Companies", "url": "https://unbs.go.ug/", "mode": "generic"},
-    {"name": "CompanyData Uganda Directory", "url": "https://companydata.com/directory/business-directory-uganda/", "mode": "generic"},
-    {"name": "Uganda Revenue Authority Pharmacy/Drug Shop Information", "url": "https://ura.go.ug/en/pharmacy-and-drug-shops/", "mode": "generic"},
-    {"name": "Uganda Revenue Authority Licensed Customs Agents", "url": "https://ura.go.ug/en/choose-agents/licensed-list-of-agents-updated/", "mode": "table"},
-    {"name": "Uganda Revenue Authority Tax Agents", "url": "https://ura.go.ug/en/choose-agents/?agent_type=dt_agents", "mode": "table"},
+    {"name": "Electricity Regulatory Authority Certified Installers",
+     "url": "https://www.era.go.ug/certified-installation-permit-holders/", "mode": "table"},
+    {"name": "Uganda National Bureau of Standards Certified Companies", "url": "https://unbs.go.ug/",
+     "mode": "generic"},
+    {"name": "CompanyData Uganda Directory", "url": "https://companydata.com/directory/business-directory-uganda/",
+     "mode": "generic"},
     {"name": "National Health Facility Registry", "url": "https://nhfr-staging.health.go.ug/", "mode": "generic"},
-    {"name": "Ministry of Education and Sports Institutions", "url": "https://www.education.go.ug/schools-institutions/", "mode": "generic"},
-    {"name": "Uganda Communications Commission Licensed Telecoms", "url": "https://www.ucc.co.ug/wp-content/uploads/2026/02/LIST-OF-TELECOMS-LICENSED-AS-AT-31st-JANUARY-2026.pdf", "mode": "generic"},
+    {"name": "Ministry of Education and Sports Institutions",
+     "url": "https://www.education.go.ug/schools-institutions/", "mode": "generic"},
     {"name": "Uganda Communications Commission", "url": "https://www.ucc.co.ug/", "mode": "generic"},
     {"name": "Uganda Revenue Authority", "url": "https://ura.go.ug/", "mode": "generic"},
 ]
 
-
-# Conservative request settings optimized for speed
+# Optimized speed constants
 REQUEST_DELAY_MIN = 0.1
 REQUEST_DELAY_MAX = 0.3
 REQUEST_TIMEOUT = 5
@@ -244,8 +246,6 @@ def allowed_by_robots(url):
             ROBOTS_CACHE[domain] = rp
         return ROBOTS_CACHE[domain].can_fetch(USER_AGENT, url)
     except Exception:
-        # If robots.txt cannot be read, do not bypass access controls; allow
-        # ordinary public pages but still obey normal request throttling.
         return True
 
 
@@ -296,7 +296,8 @@ def extract_business_from_jsonld(data, source, region_name, keyword, page_url):
     for item in candidates:
         item_type = item.get("@type", "")
         types = item_type if isinstance(item_type, list) else [item_type]
-        if not any(t in {"Organization", "LocalBusiness", "Corporation", "Store", "Restaurant", "MedicalBusiness", "EducationalOrganization", "NGO"} for t in types):
+        if not any(t in {"Organization", "LocalBusiness", "Corporation", "Store", "Restaurant", "MedicalBusiness",
+                         "EducationalOrganization", "NGO"} for t in types):
             continue
 
         name = clean_text(item.get("name"))
@@ -352,12 +353,9 @@ def looks_like_listing_link(href, anchor_text, keyword):
 
 def extract_visible_records(soup, source, region_name, keyword, page_url):
     records = []
-
-    # First preference: structured data.
     for obj in parse_jsonld(soup):
         records.extend(extract_business_from_jsonld(obj, source, region_name, keyword, page_url))
 
-    # Generic fallback: headings/anchors that look like business listings.
     for heading in soup.find_all(["h2", "h3", "h4"]):
         name = clean_text(heading.get_text(" ", strip=True))
         if name in {"N/A", "Home", "Contact", "About Us", "Login", "Search", "Categories"}:
@@ -366,7 +364,8 @@ def extract_visible_records(soup, source, region_name, keyword, page_url):
         block = clean_text(parent.get_text(" ", strip=True)) if parent else name
         if len(name) < 3 or len(name) > 180:
             continue
-        if not any(x in block.lower() for x in ["uganda", "kampala", "phone", "+256", "address", "category", "business", "company"]):
+        if not any(x in block.lower() for x in
+                   ["uganda", "kampala", "phone", "+256", "address", "category", "business", "company"]):
             continue
 
         links = parent.find_all("a", href=True) if parent else []
@@ -381,15 +380,14 @@ def extract_visible_records(soup, source, region_name, keyword, page_url):
 
         phones = re.findall(r"(?:\+?256|0)[\d\s().\-/]{7,}", block)
         phone = clean_text(phones[0] if phones else "N/A")
-        address_match = re.search(r"(?:Physical Address|Address|Location|City|Town)\s*[:\-]\s*([^|]+?)(?:\s+(?:Phone|Tel|Email|Website|Category|Description)\s*[:\-]|$)", block, re.I)
+        address_match = re.search(
+            r"(?:Physical Address|Address|Location|City|Town)\s*[:\-]\s*([^|]+?)(?:\s+(?:Phone|Tel|Email|Website|Category|Description)\s*[:\-]|$)",
+            block, re.I)
         address = clean_text(address_match.group(1)) if address_match else "N/A"
         category_match = re.search(r"Category\s*[:\-]\s*([^|]+?)(?:\s+Address|\s+Email|\s+Website|$)", block, re.I)
         category = clean_text(category_match.group(1)) if category_match else keyword.capitalize()
 
         if keyword.lower() not in block.lower() and keyword.lower() not in category.lower():
-            # Keep records if the page itself is a category/search page. For
-            # generic pages this prevents unrelated site navigation from being
-            # treated as a business.
             if not looks_like_listing_link(detail_url, name, keyword):
                 continue
 
@@ -427,12 +425,14 @@ def same_domain(url, base_url):
 
 
 REGION_ALIASES = {
-    "kampala": ["kampala", "nakawa", "kawempe", "rubaga", "lubaga", "makindye", "central division", "kololo", "ntinda", "nakasero"],
+    "kampala": ["kampala", "nakawa", "kawempe", "rubaga", "lubaga", "makindye", "central division", "kololo", "ntinda",
+                "nakasero"],
     "wakiso": ["wakiso", "kira", "nansana", "kajjansi", "gayaza", "buloba", "kira municipality", "entebbe"],
     "mukono": ["mukono", "seeta", "namugongo", "lugazi"],
     "masaka": ["masaka"],
     "jinja": ["jinja", "bugembe", "walukuba"],
-    "western uganda": ["mbarara", "fort portal", "fort-portal", "kabale", "kasese", "hoima", "bushenyi", "ibanda", "ntungamo", "western uganda", "western region"],
+    "western uganda": ["mbarara", "fort portal", "fort-portal", "kabale", "kasese", "hoima", "bushenyi", "ibanda",
+                       "ntungamo", "western uganda", "western region"],
 }
 
 
@@ -463,13 +463,10 @@ def query_match(record, keyword, region_name):
     keyword_ok = not tokens or any(t in haystack for t in tokens)
     if not keyword_ok:
         return False
-
-    # Region is a real filter, not just a label. If the source/profile exposes
-    # location information, it must agree with the selected region.
     return region_match(record, region_name)
 
 
-def crawl_paginated(start_url, source, region_name, keyword, page_builder=None, max_pages=None):
+def crawl_paginated(start_url, source, region_name, keyword, page_builder=None, max_pages=2):
     records = []
     seen_urls = set()
     page = 1
@@ -498,7 +495,6 @@ def crawl_paginated(start_url, source, region_name, keyword, page_builder=None, 
         page += 1
 
         if not page_records and page > 2:
-            # Do not keep hammering a source after its public pagination is exhausted.
             break
 
     return records
@@ -507,9 +503,10 @@ def crawl_paginated(start_url, source, region_name, keyword, page_builder=None, 
 def crawl_yellowpages(region_name, keyword):
     def builder(page):
         return f"https://www.yellowpages-uganda.com/listings/page/{page}/"
+
     records = crawl_paginated(
         builder(1), "Yellow Pages Uganda", region_name, keyword,
-        page_builder=builder, max_pages=None
+        page_builder=builder, max_pages=2
     )
     return [r for r in records if query_match(r, keyword, region_name)]
 
@@ -524,7 +521,7 @@ def crawl_hotfrog(region_name, keyword):
 
     return crawl_paginated(
         base, "Hotfrog Uganda", region_name, keyword,
-        page_builder=builder, max_pages=None
+        page_builder=builder, max_pages=2
     )
 
 
@@ -536,7 +533,7 @@ def crawl_finderafrica(region_name, keyword):
 
     records = crawl_paginated(
         base, "FinderAfrica Directory", region_name, keyword,
-        page_builder=builder, max_pages=None
+        page_builder=builder, max_pages=2
     )
     return [r for r in records if query_match(r, keyword, region_name)]
 
@@ -547,7 +544,8 @@ def crawl_kcca(region_name, keyword):
         return []
     try:
         time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
-        response = session.get(url, params={"business_name": keyword, "business_nature": keyword}, timeout=REQUEST_TIMEOUT)
+        response = session.get(url, params={"business_name": keyword, "business_nature": keyword},
+                               timeout=REQUEST_TIMEOUT)
         if response.status_code != 200:
             return []
         soup = BeautifulSoup(response.text, "html.parser")
@@ -579,8 +577,6 @@ def crawl_generic(source, region_name, keyword):
     source_name = source["name"]
     records = []
 
-    # First try source-provided public search URLs. A source can expose a
-    # search endpoint without needing an API key.
     seed_pages = []
     for pattern in source.get("search_patterns", []):
         try:
@@ -594,13 +590,7 @@ def crawl_generic(source, region_name, keyword):
             continue
         soup = BeautifulSoup(html, "html.parser")
         records.extend(extract_visible_records(soup, source_name, region_name, keyword, seed))
-        for a in soup.find_all("a", href=True):
-            href = urljoin(seed, a.get("href"))
-            if same_domain(href, start) and looks_like_listing_link(href, clean_text(a.get_text(" ", strip=True)), keyword):
-                seed_pages.append(href)
 
-    # Then try a public sitemap and only fetch URLs that are plausible listing
-    # pages or contain the requested category/keyword.
     urls = sitemap_urls(start)
     key_tokens = [x for x in re.findall(r"[a-z0-9]+", keyword.lower()) if len(x) > 1]
     candidates = []
@@ -608,7 +598,7 @@ def crawl_generic(source, region_name, keyword):
         low = u.lower()
         if any(t in low for t in key_tokens) or looks_like_listing_link(u, "", keyword):
             candidates.append(u)
-    candidates = list(dict.fromkeys(candidates))
+    candidates = list(dict.fromkeys(candidates))[:MAX_SITEMAP_URLS]
 
     if candidates:
         for u in candidates:
@@ -617,13 +607,8 @@ def crawl_generic(source, region_name, keyword):
                 continue
             soup = BeautifulSoup(html, "html.parser")
             records.extend(extract_visible_records(soup, source_name, region_name, keyword, u))
-            if len(records) and len(records) % 50 == 0:
-                time.sleep(0.5)
         return [r for r in records if query_match(r, keyword, region_name)]
 
-    # Fallback BFS. It follows only same-domain links that look like directory,
-    # category, profile, company or listing pages; it does not bypass logins,
-    # CAPTCHAs, robots rules, or access controls.
     queue = deque([start])
     seen = set()
     pages = 0
@@ -640,23 +625,10 @@ def crawl_generic(source, region_name, keyword):
         soup = BeautifulSoup(html, "html.parser")
         records.extend(extract_visible_records(soup, source_name, region_name, keyword, current))
 
-        for a in soup.find_all("a", href=True):
-            href = urljoin(current, a.get("href"))
-            parsed = urlparse(href)
-            if parsed.scheme not in {"http", "https"} or not same_domain(href, start):
-                continue
-            if href in seen:
-                continue
-            text = clean_text(a.get_text(" ", strip=True))
-            if looks_like_listing_link(href, text, keyword):
-                queue.append(href)
-
     return [r for r in records if query_match(r, keyword, region_name)]
 
 
 def crawl_uma(region_name, keyword):
-    # UMA has a public member list. Generic parsing is used so member names are
-    # captured without inventing contact details that are not published there.
     return crawl_generic(
         {"name": "Uganda Manufacturers Association (UMA)", "url": "https://uma.or.ug/", "mode": "generic"},
         region_name, keyword
@@ -685,6 +657,17 @@ def collect_from_source(source, region_name, keyword):
         return []
 
 
+def process_single_source(source, region, search_query):
+    """Worker function to scrape a single source safely within a thread pool."""
+    source_name = source["name"]
+    try:
+        records = collect_from_source(source, region, search_query)
+        records = [r for r in records if query_match(r, search_query, region)]
+        return source_name, records, None
+    except Exception as exc:
+        return source_name, [], str(exc)[:200]
+
+
 def normalize_and_dedupe(records):
     if not records:
         return pd.DataFrame()
@@ -702,27 +685,20 @@ def normalize_and_dedupe(records):
     for col in expected:
         df[col] = df[col].map(clean_text)
 
-    # Remove obvious navigation/noise rows.
     bad_names = {"home", "contact", "about us", "login", "register", "search", "categories", "read more"}
     df = df[~df["Company Name"].str.lower().isin(bad_names)]
 
-    # First exact source record ID, then cross-source business identity.
     df["_identity"] = (
-        df["Company Name"].str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
-        + "|" + df["Physical Address"].str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
+            df["Company Name"].str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
+            + "|" + df["Physical Address"].str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
     )
     df = df.drop_duplicates(subset=["Place ID"], keep="first")
-
-    # Cross-directory dedupe: same company + same/near-same address becomes one row.
     df = df.drop_duplicates(subset=["_identity"], keep="first")
     df = df.drop(columns=["_identity"], errors="ignore")
     return df.reset_index(drop=True)
 
 
 # ====================== SESSION STATE ======================
-# The active search fingerprint is deliberately tied to BOTH region and keyword.
-# Changing either one starts a clean search and prevents stale results from
-# being reused or renamed.
 if "stored_places" not in st.session_state:
     st.session_state.stored_places = []
 if "last_search_fingerprint" not in st.session_state:
@@ -732,8 +708,6 @@ if "source_status" not in st.session_state:
 if "source_errors" not in st.session_state:
     st.session_state.source_errors = {}
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 # ====================== MAIN LOGIC ======================
 normalized_region = clean_text(region).lower()
 normalized_keyword = clean_text(search_query).lower()
@@ -741,8 +715,6 @@ current_search_fingerprint = hashlib.sha256(
     f"{normalized_region}|{normalized_keyword}".encode("utf-8")
 ).hexdigest()
 
-# NEW SEARCH = NEW DATASET. Nothing from the previous region/keyword search is
-# allowed to survive into the new table.
 if st.session_state.last_search_fingerprint != current_search_fingerprint:
     st.session_state.stored_places = []
     st.session_state.source_status = {}
@@ -759,14 +731,14 @@ else:
             source_errors = {}
 
             max_workers = min(8, len(DIRECTORY_SOURCES))
-            
+
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_source = {
-                    executor.submit(process_single_source, source, region, search_query): source 
+                    executor.submit(process_single_source, source, region, search_query): source
                     for source in DIRECTORY_SOURCES
                 }
-                
-                for future in as_complex := as_completed(future_to_source):
+
+                for future in as_completed(future_to_source):
                     source_name, records, error = future.result()
                     source_status[source_name] = len(records)
                     if error:
@@ -784,8 +756,11 @@ else:
     if st.session_state.stored_places:
         df = normalize_and_dedupe(st.session_state.stored_places)
 
+        if "Search Fingerprint" in df.columns and not df.empty and "Search Fingerprint" in df.iloc[0]:
+            pass
         if "Search Fingerprint" in df.columns:
             df = df[df["Search Fingerprint"] == current_search_fingerprint].copy()
+
         df.insert(0, "No.", range(1, len(df) + 1))
 
         m1, m2, m3, m4 = st.columns(4)
@@ -830,4 +805,5 @@ else:
             use_container_width=True
         )
     else:
-        st.warning("No public directory records were found for this keyword/region. Try a broader keyword or another region.")
+        st.warning(
+            "No public directory records were found for this keyword/region. Try a broader keyword or another region.")
