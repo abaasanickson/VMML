@@ -1,9 +1,16 @@
 import time
 import random
+import re
+import json
+import hashlib
+import urllib.parse
+from datetime import datetime, timezone, timedelta
+
 import pandas as pd
 import requests
 import streamlit as st
-from datetime import datetime, timezone, timedelta
+from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 # ====================== PAGE CONFIG ======================
 st.markdown("""
@@ -60,33 +67,25 @@ st.markdown("""
         margin-bottom: 24px;
     }
     .welcome-title {
-        font-size: 1.6rem;38bdf8
+        font-size: 1.6rem;
         font-weight: 700;
-        color: #291C0E;
+        color: #f8fafc;
         margin-bottom: 6px;
     }
     .welcome-subtitle {
-        color: #6E473B;
+        color: #94a3b8;
         font-size: 1rem;
         margin-bottom: 14px;
     }
     .quote {
         font-style: italic;
-        color: #A78D78;
+        color: #38bdf8;
         border-left: 4px solid #3b82f6;
         padding-left: 16px;
         margin-top: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
-
-# ====================== LOAD API KEY FROM SECRETS ======================
-try:
-    api_key = st.secrets["GOOGLE_MAPS_API_KEY"]
-except:
-    st.error("API key not configured. Please contact the administrator.")
-    st.stop()
-
 
 # ====================== QUOTES & WELCOME ======================
 @st.cache_data(ttl=60)
@@ -95,11 +94,11 @@ def get_live_quote():
         response = requests.get("https://zenquotes.io/api/random", timeout=3)
         if response.status_code == 200:
             data = response.json()
-            return f'"{data[0]["q"]}" — {data[0]["a"]}'
-    except:
+            if data and isinstance(data, list) and data[0].get("q"):
+                return f'"{data[0]["q"]}" — {data[0].get("a", "Unknown")}'
+    except Exception:
         pass
     return '"Dream big. Start small. Act now."'
-
 
 def get_greeting():
     eat_timezone = timezone(timedelta(hours=3))
@@ -113,20 +112,19 @@ def get_greeting():
     else:
         return "Hello Alison"
 
-
 quote = get_live_quote()
 greeting = get_greeting()
 
 st.markdown(f"""
 <div class="welcome-card">
-    <div class="welcome-title">{greeting} Ready to generate leads?</div>
+    <div class="welcome-title">{greeting}. Ready to generate leads?</div>
     <div class="welcome-subtitle">Full coverage across Kampala, Wakiso, Mukono & Regional Directories</div>
     <div class="quote">{quote}</div>
 </div>
 """, unsafe_allow_html=True)
 
 st.title("Full Region Business Lead Generator")
-st.caption("Grid-based Nearby Search • Smart Regional Directory Expansion • Deduplicated results")
+st.caption("Direct Uganda Directory, Registry & OpenStreetMap Search • Multi-Source Expansion • Deduplicated results")
 
 # ====================== SIDEBAR ======================
 st.sidebar.markdown("### ⚙️ Search Settings")
@@ -142,350 +140,185 @@ search_query = st.sidebar.text_input(
     help="e.g. School, Hardware, Pharmacy, Bank, Supermarket, Clinic..."
 )
 
-radius = st.sidebar.slider(
-    "Search Radius per point (meters)",
-    min_value=2000,
-    max_value=8000,
-    value=5000,
-    step=500
-)
-
 st.sidebar.markdown("---")
-st.sidebar.info("Smart Directory Expansion active: Guarantees full results across all sectors and regions.")
+st.sidebar.info("Hybrid active: OpenStreetMap spatial data + Playwright headless browser scraping across public Ugandan directories and registries.")
 
-# ====================== REGION GRIDS ======================
-REGION_GRIDS = {
-    "Kampala": [
-        # ========== CENTRAL DIVISION (CBD + Kololo + Nakasero + Old Kampala) ==========
-        (0.30, 32.56), (0.30, 32.57), (0.30, 32.58), (0.30, 32.59), (0.30, 32.60),
-        (0.31, 32.56), (0.31, 32.57), (0.31, 32.58), (0.31, 32.59), (0.31, 32.60),
-        (0.32, 32.56), (0.32, 32.57), (0.32, 32.58), (0.32, 32.59), (0.32, 32.60),
-        (0.33, 32.56), (0.33, 32.57), (0.33, 32.58), (0.33, 32.59), (0.33, 32.60),
-        (0.34, 32.56), (0.34, 32.57), (0.34, 32.58), (0.34, 32.59), (0.34, 32.60),
+# ====================== UGANDA SOURCE CATALOG & SCRAPERS ======================
+DIRECTORY_SOURCES = [
+    {"name": "Yellow Pages Uganda", "url": "https://www.yellowpages-uganda.com/"},
+    {"name": "Yellow Uganda", "url": "https://www.yellow.ug/"},
+    {"name": "Hotfrog Uganda", "url": "https://www.hotfrog.ug/"},
+    {"name": "FinderAfrica Uganda", "url": "https://finderafrica.com/location/business-directory-uganda/"},
+    {"name": "KCCA Business Register", "url": "https://www.kcca.go.ug/businesses"},
+]
 
-        # ========== KAWEMPE DIVISION (North) ==========
-        (0.34, 32.54), (0.34, 32.55),
-        (0.35, 32.54), (0.35, 32.55), (0.35, 32.56), (0.35, 32.57),
-        (0.36, 32.54), (0.36, 32.55), (0.36, 32.56), (0.36, 32.57),
-        (0.37, 32.54), (0.37, 32.55), (0.37, 32.56), (0.37, 32.57),
-        (0.38, 32.54), (0.38, 32.55), (0.38, 32.56), (0.38, 32.57),
-        (0.39, 32.54), (0.39, 32.55), (0.39, 32.56),
-        (0.40, 32.54), (0.40, 32.55),
+def clean_text(value):
+    if value is None:
+        return "N/A"
+    value = re.sub(r"\s+", " ", str(value)).strip()
+    return value if value else "N/A"
 
-        # ========== NAKAWA DIVISION (East) ==========
-        (0.31, 32.61), (0.31, 32.62), (0.31, 32.63), (0.31, 32.64),
-        (0.32, 32.61), (0.32, 32.62), (0.32, 32.63), (0.32, 32.64),
-        (0.33, 32.61), (0.33, 32.62), (0.33, 32.63), (0.33, 32.64),
-        (0.34, 32.61), (0.34, 32.62), (0.34, 32.63), (0.34, 32.64),
-        (0.35, 32.61), (0.35, 32.62), (0.35, 32.63), (0.35, 32.64),
-        (0.36, 32.61), (0.36, 32.62), (0.36, 32.63),
-        (0.30, 32.61), (0.30, 32.62), (0.30, 32.63),
+def fetch_osm_grid_data(region_name, keyword):
+    """Queries free OpenStreetMap Overpass API for geographic nodes and ways."""
+    overpass_url = "https://overpass-api.de/api/interpreter"
+    
+    # Region bounding box mapping
+    bbox = "0.25,32.45,0.42,32.70" # Kampala default
+    if region_name.lower() == 'wakiso':
+        bbox = "0.05,32.30,0.60,32.65"
+    elif region_name.lower() == 'mukono':
+        bbox = "0.20,32.60,0.55,32.90"
 
-        # ========== LUBAGA / RUBAGA DIVISION (West) ==========
-        (0.29, 32.52), (0.29, 32.53), (0.29, 32.54), (0.29, 32.55),
-        (0.30, 32.52), (0.30, 32.53), (0.30, 32.54), (0.30, 32.55),
-        (0.31, 32.52), (0.31, 32.53), (0.31, 32.54), (0.31, 32.55),
-        (0.32, 32.52), (0.32, 32.53), (0.32, 32.54), (0.32, 32.55),
-        (0.33, 32.52), (0.33, 32.53), (0.33, 32.54),
-        (0.28, 32.53), (0.28, 32.54), (0.28, 32.55),
-
-        # ========== MAKINDYE DIVISION (South) ==========
-        (0.26, 32.55), (0.26, 32.56), (0.26, 32.57), (0.26, 32.58), (0.26, 32.59),
-        (0.27, 32.55), (0.27, 32.56), (0.27, 32.57), (0.27, 32.58), (0.27, 32.59),
-        (0.28, 32.56), (0.28, 32.57), (0.28, 32.58), (0.28, 32.59),
-        (0.29, 32.56), (0.29, 32.57), (0.29, 32.58), (0.29, 32.59),
-        (0.25, 32.56), (0.25, 32.57), (0.25, 32.58),
-        (0.24, 32.57), (0.24, 32.58),
-
-        # ========== EXTRA IMPORTANT AREAS ==========
-        # Ntinda / Naguru / Bukoto
-        (0.34, 32.60), (0.35, 32.60), (0.36, 32.60),
-        # Wandegeya / Makerere
-        (0.33, 32.55), (0.34, 32.55),
-        # Nsambya / Kibuli
-        (0.30, 32.59), (0.29, 32.59),
-        # Bwaise / Kawaala side
-        (0.35, 32.53), (0.36, 32.53),
-        # Industrial Area / Luzira direction
-        (0.31, 32.65), (0.32, 32.65),
-        # Najjanankumbi / Ndeeba
-        (0.28, 32.55), (0.29, 32.54),
-    ],
-    "Wakiso": [
-        (0.390, 32.470), (0.400, 32.480), (0.370, 32.550), (0.360, 32.520),
-        (0.380, 32.500), (0.350, 32.580), (0.330, 32.620), (0.240, 32.550),
-        (-0.05, 32.35), (0.00, 32.45), (0.05, 32.55), (0.10, 32.45),
-        (0.15, 32.35), (0.20, 32.45), (0.25, 32.55), (0.30, 32.45)
-    ],
-    "Mukono": [
-        (0.32, 32.72), (0.32, 32.74), (0.32, 32.76), (0.33, 32.72), (0.33, 32.74),
-        (0.33, 32.76), (0.34, 32.72), (0.34, 32.74), (0.34, 32.76), (0.35, 32.72),
-    ],
-    "Western Uganda": [
-        (-0.70, 30.58), (-0.64, 30.64), (-0.58, 30.70), (0.55, 30.23), (0.61, 30.29),
-    ],
-
-    "Masaka": [
-        (-0.36, 31.70), (-0.35, 31.72), (-0.34, 31.74), (-0.33, 31.70), (-0.32, 31.72),
-    ],
-    "Jinja": [
-        (0.42, 33.18), (0.43, 33.20), (0.44, 33.22), (0.45, 33.18), (0.46, 33.20),
-    ]
-}
-
-
-# ====================== SMART DIRECTORY EXPANSION ======================
-def get_directory_fallback(region_name, query):
+    query = f"""
+    [out:json][timeout:25];
+    (
+      node["shop"="{keyword.lower()}"]({bbox});
+      way["shop"="{keyword.lower()}"]({bbox});
+      node["amenity"="{keyword.lower()}"]({bbox});
+      way["amenity"="{keyword.lower()}"]({bbox});
+    );
+    out body;
+    >;
+    out skel qt;
     """
-    Guarantees comprehensive commercial results for any sector (Banks, Hardware, Tech, etc.)
-    across any region by generating structured verified registry entries if map pins return zero.
-    """
-    q_lower = query.lower().strip()
-    records = []
+    try:
+        response = requests.post(overpass_url, data=query, timeout=30)
+        if response.status_code == 200:
+            elements = response.json().get('elements', [])
+            records = []
+            for el in elements:
+                if 'tags' in el:
+                    name = el['tags'].get('name', 'Unnamed Entity')
+                    records.append({
+                        "Company Name": name,
+                        "Region": region_name,
+                        "Category": keyword.capitalize(),
+                        "Business Deals In": keyword.capitalize(),
+                        "Phone Contact": el['tags'].get('phone', el['tags'].get('contact:phone', 'N/A')),
+                        "Website": el['tags'].get('website', 'N/A'),
+                        "Physical Address": el['tags'].get('addr:street', region_name),
+                        "Rating": "N/A",
+                        "Lat": str(el.get('lat', 'N/A')),
+                        "Lng": str(el.get('lon', 'N/A')),
+                        "Data Source": "OpenStreetMap",
+                        "Source URL": "OpenStreetMap Overpass API"
+                    })
+            return records
+    except Exception as e:
+        print(f"OSM Error: {e}")
+    return []
 
-    # Pre-built verified templates based on sector
-    if "bank" in q_lower:
-        entities = [
-            ("Stanbic Bank Uganda", "Banking & Financial Services", "+256 414 230811", "https://www.stanbicbank.co.ug",
-             f"Main Street, {region_name}"),
-            ("Centenary Bank", "Retail Banking & Microfinance", "+256 414 251276", "https://www.centenarybank.co.ug",
-             f"Commercial Road, {region_name}"),
-            ("Equity Bank Uganda", "Commercial Banking", "+256 417 327000", "https://equitygroupholdings.com/ug",
-             f"Town Centre, {region_name}"),
-            ("DFCU Bank", "Financial Institutions", "+256 414 351000", "https://www.dfcugroup.com",
-             f"High Street, {region_name}"),
-            ("Absa Bank Uganda", "Corporate & Retail Banking", "+256 417 120000", "https://www.absa.co.ug",
-             f"Plot 22, {region_name}")
-        ]
-    elif "school" in q_lower or "education" in q_lower:
-        entities = [
-            ("St. Mary's Secondary School", "Education & Secondary School", "+256 414 000111", "https://stmarys.ac.ug",
-             f"Education Way, {region_name}"),
-            ("Kampala Parents School", "Primary & Nursery Education", "+256 414 222333", "https://kampalaparents.com",
-             f"School Zone, {region_name}"),
-            ("Standard High School", "Secondary Education", "+256 414 444555", "https://standardhigh.ug",
-             f"Main Road, {region_name}")
-        ]
-    else:
-        entities = [
-            (f"{region_name.capitalize()} Premier {query.capitalize()} Hub",
-             f"{query.capitalize()} Supplies & Services", "+256 414 555666", "https://www.ugandabusiness.org",
-             f"Central Zone, {region_name}"),
-            (f"Modern {query.capitalize()} Enterprise Ltd", f"Commercial {query.capitalize()}", "+256 393 777888",
-             "https://www.yellowpagesuganda.com", f"Industrial Area, {region_name}"),
-            (f"Apex {query.capitalize()} Solutions", f"Wholesale & Retail {query.capitalize()}", "+256 414 999000",
-             "https://www.b2bmap.com/uganda", f"High Street, {region_name}")
-        ]
+def scrape_ugandan_directories(region_name, keyword):
+    """Scrapes public directories and registries using Playwright headless browser."""
+    aggregated_records = []
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
 
-    for name, deal, phone, web, addr in entities:
-        records.append({
-            "Company Name": name,
-            "Region": region_name,
-            "Category": query.capitalize(),
-            "Business Deals In": deal,
-            "Phone Contact": phone,
-            "Website": web,
-            "Physical Address": addr,
-            "Rating": round(random.uniform(4.2, 4.9), 1),
-            "Place ID": f"dir_fallback_{abs(hash(name + addr))}",
-            "Lat": 0.3100 + random.uniform(-0.04, 0.04),
-            "Lng": 32.5800 + random.uniform(-0.04, 0.04),
-        })
-    return records
+            for source in DIRECTORY_SOURCES:
+                target_url = f"{source['url']}?q={urllib.parse.quote(keyword)}&l={urllib.parse.quote(region_name)}"
+                try:
+                    page.goto(target_url, timeout=25000)
+                    time.sleep(random.uniform(1.0, 2.0))
+                    
+                    for _ in range(2):
+                        page.mouse.wheel(0, 1000)
+                        time.sleep(0.8)
 
+                    soup = BeautifulSoup(page.content(), 'html.parser')
+                    listings = soup.select('.listing-card, .business-card, .search-item, article, .result-item')
+                    
+                    for item in listings:
+                        name_elem = item.select_one('h2, h3, .title, .business-name')
+                        phone_elem = item.select_one('.phone, .tel, a[href^="tel:"]')
+                        address_elem = item.select_one('.address, .location')
+                        
+                        name = clean_text(name_elem.get_text(strip=True) if name_elem else None)
+                        if name != "N/A":
+                            aggregated_records.append({
+                                "Company Name": name,
+                                "Region": region_name,
+                                "Category": keyword.capitalize(),
+                                "Business Deals In": keyword.capitalize(),
+                                "Phone Contact": clean_text(phone_elem.get_text(strip=True) if phone_elem else "N/A"),
+                                "Website": source["url"],
+                                "Physical Address": clean_text(address_elem.get_text(strip=True) if address_elem else region_name),
+                                "Rating": "N/A",
+                                "Lat": "N/A",
+                                "Lng": "N/A",
+                                "Data Source": source["name"],
+                                "Source URL": target_url
+                            })
+                except Exception:
+                    continue
+            browser.close()
+    except Exception as e:
+        print(f"Playwright error: {e}")
+    return aggregated_records
 
-# ====================== SESSION STATE ======================
+# ====================== SESSION STATE & MAIN LOGIC ======================
 if "stored_places" not in st.session_state:
     st.session_state.stored_places = []
-if "used_points" not in st.session_state:
-    st.session_state.used_points = set()
-if "last_params" not in st.session_state:
-    st.session_state.last_params = ""
-if "point_index" not in st.session_state:
-    st.session_state.point_index = 0
+if "last_search" not in st.session_state:
+    st.session_state.last_search = ""
 
+current_search_key = f"{region}|{search_query}"
 
-# ====================== HELPER FUNCTIONS ======================
-
-def fetch_place_details(place_id, key):
-    url = "https://maps.googleapis.com/maps/api/place/details/json"
-    params = {
-        "place_id": place_id,
-        "fields": "formatted_phone_number,international_phone_number,website,types",
-        "key": key
-    }
-    try:
-        r = requests.get(url, params=params, timeout=8)
-        data = r.json()
-        if data.get("status") == "OK":
-            result = data.get("result", {})
-            phone = result.get("formatted_phone_number") or result.get("international_phone_number") or "N/A"
-            website = result.get("website") or "N/A"
-
-            raw_types = result.get("types", [])
-            filtered_types = [t.replace("_", " ").title() for t in raw_types
-                              if t not in ["point_of_interest", "establishment"]]
-            business_deals_in = ", ".join(filtered_types) if filtered_types else "N/A"
-
-            return phone, website, business_deals_in
-    except:
-        pass
-    return "N/A", "N/A", "N/A"
-
-
-def nearby_search_full(lat, lng, keyword, key, radius_m, place_type=None, max_pages=2):
-    all_results = []
-    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-
-    params = {
-        "location": f"{lat},{lng}",
-        "radius": radius_m,
-        "key": key
-    }
-
-    if keyword and keyword.strip():
-        params["keyword"] = keyword.strip()
-
-    for page in range(max_pages):
-        try:
-            r = requests.get(url, params=params, timeout=12)
-            data = r.json()
-            status = data.get("status")
-
-            if status == "OK":
-                all_results.extend(data.get("results", []))
-            elif status == "ZERO_RESULTS":
-                break
-            else:
-                break
-
-            next_token = data.get("next_page_token")
-            if not next_token:
-                break
-
-            time.sleep(2.0)
-            params = {"pagetoken": next_token, "key": key}
-        except:
-            break
-
-    return all_results
-
-
-def process_places(places, region_name, keyword, key):
-    extracted = []
-    for place in places:
-        place_id = place.get("place_id")
-        if not place_id:
-            continue
-
-        phone, website, business_deals_in = fetch_place_details(place_id, key)
-
-        extracted.append({
-            "Company Name": place.get("name", "N/A"),
-            "Region": region_name,
-            "Category": keyword.capitalize() if keyword else "General",
-            "Business Deals In": business_deals_in,
-            "Phone Contact": phone,
-            "Website": website,
-            "Physical Address": place.get("vicinity") or place.get("formatted_address", "N/A"),
-            "Rating": place.get("rating", "N/A"),
-            "Place ID": place_id,
-            "Lat": place["geometry"]["location"]["lat"],
-            "Lng": place["geometry"]["location"]["lng"],
-        })
-    return extracted
-
-
-# ====================== MAIN LOGIC ======================
-current_params = f"{region}_{search_query}_{radius}"
-
-if st.session_state.last_params != current_params:
+if st.session_state.last_search != current_search_key:
     st.session_state.stored_places = []
-    st.session_state.used_points = set()
-    st.session_state.point_index = 0
-    st.session_state.last_params = current_params
+    st.session_state.last_search = current_search_key
 
-grid = REGION_GRIDS[region]
-total_points = len(grid)
-
-# First load
-if len(st.session_state.stored_places) == 0 and st.session_state.point_index == 0:
-    with st.spinner(f"Scanning grid points & querying regional registries for '{search_query}' in {region}..."):
-        batch = []
-        for i in range(min(3, total_points)):
-            lat, lng = grid[i]
-            places = nearby_search_full(
-                lat=lat, lng=lng, keyword=search_query, key=api_key, radius_m=radius
-            )
-            batch.extend(process_places(places, region, search_query, api_key))
-            st.session_state.used_points.add(i)
-            st.session_state.point_index = i + 1
-            time.sleep(1.0)
-
-        # Ensure directory fallback pulls comprehensive records if map results are empty
-        if len(batch) == 0:
-            batch.extend(get_directory_fallback(region, search_query))
-
-        df_temp = pd.DataFrame(batch)
-        if not df_temp.empty:
-            df_temp = df_temp.drop_duplicates(subset=["Place ID"])
-            st.session_state.stored_places = df_temp.to_dict("records")
-
-# Display
-if st.session_state.stored_places:
-    df = pd.DataFrame(st.session_state.stored_places)
-    df = df.drop_duplicates(subset=["Place ID"]).reset_index(drop=True)
-    df.insert(0, "No.", range(1, len(df) + 1))
-
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Unique Places", len(df))
-    m2.metric("Region", region)
-    m3.metric("Keyword", search_query.capitalize())
-    m4.metric("Points Scanned", f"{len(st.session_state.used_points)} / {total_points}")
-
-    st.markdown("---")
-    st.subheader(f"Results for “{search_query}” in {region}")
-
-    st.dataframe(
-        df[["No.", "Company Name", "Business Deals In", "Phone Contact", "Physical Address", "Rating", "Website"]],
-        use_container_width=True,
-        height=460
-    )
-
-    remaining = total_points - len(st.session_state.used_points)
-
-    if remaining > 0:
-        if st.button(f"🔄 Load Next Batch  ({remaining} points left)", type="primary", use_container_width=True):
-            with st.spinner("Fetching next batch..."):
-                new_batch = []
-                points_to_load = min(3, remaining)
-                for i in range(st.session_state.point_index, st.session_state.point_index + points_to_load):
-                    if i >= total_points:
-                        break
-                    lat, lng = grid[i]
-                    places = nearby_search_full(
-                        lat=lat, lng=lng, keyword=search_query, key=api_key, radius_m=radius
-                    )
-                    new_batch.extend(process_places(places, region, search_query, api_key))
-                    st.session_state.used_points.add(i)
-                    time.sleep(1.0)
-
-                st.session_state.point_index += points_to_load
-                combined = st.session_state.stored_places + new_batch
-                df_combined = pd.DataFrame(combined).drop_duplicates(subset=["Place ID"])
-                st.session_state.stored_places = df_combined.to_dict("records")
-                st.rerun()
-    else:
-        st.success("✅ All grid points and regional business directories for this search have been fully scanned.")
-
-    st.markdown("---")
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="📥 Export All Leads to CSV",
-        data=csv,
-        file_name=f"{region}_{search_query}_leads.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
+if not search_query.strip():
+    st.warning("Enter a business keyword to start the directory search.")
 else:
-    st.warning("No places found yet. Try a different keyword or increase the radius.")
+    if not st.session_state.stored_places:
+        with st.spinner(f"Scraping OpenStreetMap & Ugandan Directories for '{search_query}' in {region}..."):
+            osm_data = fetch_osm_grid_data(region, search_query)
+            dir_data = scrape_ugandan_directories(region, search_query)
+            
+            combined = osm_data + dir_data
+            if combined:
+                df_temp = pd.DataFrame(combined)
+                df_temp = df_temp.drop_duplicates(subset=["Company Name", "Physical Address"])
+                st.session_state.stored_places = df_temp.to_dict("records")
+
+    if st.session_state.stored_places:
+        df = pd.DataFrame(st.session_state.stored_places)
+        df.insert(0, "No.", range(1, len(df) + 1))
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total Unique Places", len(df))
+        m2.metric("Region", region)
+        m3.metric("Keyword", search_query.capitalize())
+        m4.metric("Sources Scanned", "OSM + Directories")
+
+        st.markdown("---")
+        st.subheader(f"Results for “{search_query}” in {region}")
+
+        display_columns = [
+            "No.", "Company Name", "Business Deals In", "Phone Contact",
+            "Physical Address", "Rating", "Website", "Data Source", "Source URL"
+        ]
+        display_columns = [c for c in display_columns if c in df.columns]
+
+        st.dataframe(
+            df[display_columns],
+            use_container_width=True,
+            height=460
+        )
+
+        st.markdown("---")
+        csv = df.drop(columns=["No."], errors="ignore").to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="📥 Export All Leads to CSV",
+            data=csv,
+            file_name=f"{region}_{search_query}_leads.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+    else:
+        st.warning("No public records found for this keyword/region combination. Try another search term.")
